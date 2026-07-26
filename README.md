@@ -100,7 +100,7 @@ python3 tb_log_reducer.py --input_dir ./raw_logs --output_dir ./reduced_logs
 
 While implementation demanded considerable trial and error, the final architecture produced results exceeding expectations. Most notably, in log footprint reduction—the primary metric—it achieved an absolute, empirical fact of over 90% size reduction. The count of event objects dropped drastically, resulting in remarkably fluid UI rendering.
 
-![XProf Cubism Benchmark Evidence](fig01_benchmark_evidence.png)
+![XProf Cubism Benchmark Evidence](fig01_waveform_alignment_concept.png)
 
 #### Empirical Metrics: JAX Spatial Memory Workload Benchmark Log
 
