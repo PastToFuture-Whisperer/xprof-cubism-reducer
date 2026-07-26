@@ -240,4 +240,4 @@ This is neither a parchment of nostalgia for the past nor a dying ember. It is a
 
 Young developers, can you already see the code of the future? Can you hear the anthem echoing from the intelligences of tomorrow? I shall be waiting just a little further ahead!
 
-> **Don't be evil, ¯\\\_(ツ )_/¯ but ¯\\\_( ツ)_/¯ don't be serious...!**
+> **Don't be evil, ¯\\\_(ツ )\_/¯ but ¯\\\_( ツ)\_/¯ don't be serious...!**
