@@ -125,7 +125,7 @@ Interestingly, observations revealed that the processing efficiency and dominanc
 
 In the heavy trace environment I initially benchmarked, the secondary "Rectangular Merging" stage was so extraordinarily effective that the primary "Spatial Downsampling" stage seemed almost marginal by comparison. However, across different workloads—such as those dominated by instant events—spatial downsampling acts as a powerful pre-processor, rapidly aggregating and smoothing the dataset.
 
-Thus, these two stages are not merely primary and secondary; my current observations indicate they exist in a "mutually complementary" relationship, adapting dynamically to diverse trace log structures. Bringing an idea to life and letting it converse with different datasets reveals unexpected depth—this is precisely what makes programming so fascinating. ¯\\_(ツ)_/¯
+Thus, these two stages are not merely primary and secondary; my current observations indicate they exist in a "mutually complementary" relationship, adapting dynamically to diverse trace log structures. Bringing an idea to life and letting it converse with different datasets reveals unexpected depth—this is precisely what makes programming so fascinating. ¯\\\_(ツ)_/¯
 
 For this reason, I chose not to remove "Spatial Downsampling"—despite its inherent risk of altering granularity—leaving it fully configurable within the pipeline. Feel free to adjust the parameters and experiment.
 
@@ -240,4 +240,4 @@ This is neither a parchment of nostalgia for the past nor a dying ember. It is a
 
 Young developers, can you already see the code of the future? Can you hear the anthem echoing from the intelligences of tomorrow? I shall be waiting just a little further ahead!
 
-> **Don't be evil, ¯\\_(ツ)\_/¯ but ¯\\_(ツ)\_/¯ don't be serious...!**
+> **Don't be evil, ¯\\\_(ツ)\_/¯ but ¯\\\_(ツ)\_/¯ don't be serious...!**
