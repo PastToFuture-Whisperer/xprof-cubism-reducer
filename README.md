@@ -152,14 +152,14 @@ In my primary research, I have successfully developed "Deterministic Upper-Bound
 #### Benchmark Evidence & Verification Log Data
 
 * **Raw Trace (Unmanaged Jitter / Control OFF):**
-  - Preview: `assets/fig02_tb_profile_raw.jpg`
-  - Download Log: [`log_raw.zip`](log_raw.zip)
+  - Preview: `fig02_tb_profile_raw.png`
+  - Download Log: [`log_raw_100.zip`](log_raw_100.zip)
 * **Controlled Baseline (Interceptor ON / Resolution 100%):**
-  - Preview: `assets/fig03_tb_profile_controlled_100.jpg`
-  - Download Log: [`log_ctrl_100.zip`](log_ctrl_100.zip)
+  - Preview: `fig03_tb_profile_controlled_100.png`
+  - Download Log: [`log_controlled_100.zip`](log_controlled_100.zip)
 * **Downsampled Streamlining (Interceptor ON / Spatial 10%):**
-  - Preview: `assets/fig04_tb_profile_controlled_ds10.jpg`
-  - Download Log: [`log_ctrl_ds10.zip`](log_ctrl_ds10.zip)
+  - Preview: `fig04_tb_profile_controlled_ds10.png`
+  - Download Log: [`log_controlled_ds10.zip`](log_controlled_ds10.zip)
 
 #### Empirical Metadata: Control ON/OFF & Downsampling Comparison
 
