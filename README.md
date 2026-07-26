@@ -151,23 +151,11 @@ In my primary research, I have successfully developed "Deterministic Upper-Bound
 
 #### Benchmark Evidence & Verification Log Data
 
-* **Raw Trace (Unmanaged Jitter / Control OFF):**
-  - Preview: `fig02_tb_profile_raw.png`
-  - Download Log: [`log_raw_100.zip`](log_raw_100.zip)
-* **Controlled Baseline (Interceptor ON / Resolution 100%):**
-  - Preview: `fig03_tb_profile_controlled_100.png`
-  - Download Log: [`log_controlled_100.zip`](log_controlled_100.zip)
-* **Downsampled Streamlining (Interceptor ON / Spatial 10%):**
-  - Preview: `fig04_tb_profile_controlled_ds10.png`
-  - Download Log: [`log_controlled_ds10.zip`](log_controlled_ds10.zip)
-
-#### Empirical Metadata: Control ON/OFF & Downsampling Comparison
-
-| Execution Mode / Parameter | Max Latency Spike | Latency Variance (Std Dev $\sigma$) | Average Throughput | Log Visibility & Characteristics |
+| Execution Mode / Parameter | Max Latency Spike | Latency Variance (Std Dev $\sigma$) | Average Throughput | Log Visibility & Download |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Control OFF (Raw Jitter)** | **221.4 ms** | **25.6 ms** | **50.0 ms** | Unbounded initialization & random spikes |
-| **2. Control ON (Resolution 100%)** | **123.3 ms** (~44.3% reduction) | **17.2 ms** (~32.8% convergence) | **48.6 ms** | Dynamic ceiling caps max latency instantly |
-| **3. Control ON + Downsampled (Resolution 10%)** | **128.8 ms** (Boundary preserved) | **16.9 ms** (Enhanced noise smoothing) | **50.5 ms** | **90%+ footprint reduction** while preserving latency control signatures |
+| **1. Control OFF (Raw Jitter)** | **221.4 ms** | **25.6 ms** | **50.0 ms** | Unbounded initialization & random spikes<br> [`log_raw_100.zip`](log_raw_100.zip) |
+| **2. Control ON (Resolution 100%)** | **123.3 ms** (~44.3% reduction) | **17.2 ms** (~32.8% convergence) | **48.6 ms** | Dynamic ceiling caps max latency instantly<br> [`log_controlled_100.zip`](log_controlled_100.zip) |
+| **3. Control ON + Downsampled (Resolution 10%)** | **128.8 ms** (Boundary preserved) | **16.9 ms** (Enhanced noise smoothing) | **50.5 ms** | **90%+ footprint reduction** preserved<br> [`log_controlled_ds10.zip`](log_controlled_ds10.zip) |
 
 ---
 
