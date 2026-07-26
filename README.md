@@ -45,8 +45,6 @@ The lightweight optimization modules developed in this study, along with the emp
 
 ---
 
-#### 2. Verification Profile Log Archive (For TensorBoard)
-
 #### 2. Verification Profile Log Archives (For TensorBoard)
 
 *(※ Download and extract individual log archives, then run `tensorboard --logdir ./<directory_name>` to inspect waveforms and metrics directly)*
