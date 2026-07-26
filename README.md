@@ -177,7 +177,7 @@ In my primary research, I have successfully developed "Deterministic Upper-Bound
 
 | Control OFF (Raw Trace) | Control ON (Resolution 100%) | Control ON (Resolution 10%) |
 | :---: | :---: | :---: |
-| ![OFF](assets/fig02_tb_profile_raw.jpg) | ![ON 100%](assets/fig03_tb_profile_controlled_100.jpg) | ![ON 10%](assets/fig04_tb_profile_controlled_ds10.jpg) |
+| ![OFF](assets/fig02_tb_profile_raw.png) | ![ON 100%](assets/fig03_tb_profile_controlled_100.png) | ![ON 10%](assets/fig04_tb_profile_controlled_ds10.png) |
 
 > **Figure 1: Real TensorBoard Profile Execution Screenshots.**
 > - **Left (OFF):** Unbounded initialization spikes reach 221.4 ms with wide jitter dispersion ($\sigma=25.6\text{ ms}$).
