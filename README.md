@@ -51,15 +51,15 @@ The lightweight optimization modules developed in this study, along with the emp
 
 *(※ Download and extract individual log archives, then run `tensorboard --logdir ./<directory_name>` to inspect waveforms and metrics directly)*
 
-- **[`demo_log_raw.zip.zip`](demo_log_raw.zip.zip)** (Control OFF / Resolution 100%):  
+- **[`demo_log_raw.zip`](demo_log_raw.zip)** (Control OFF / Resolution 100%):  
   - **Overview:** Raw, unmanaged physical spike log without interceptor control.  
   - **Metrics:** Max Latency: **221.4 ms**, $\sigma$: **25.6 ms**, Average: **50.0 ms**
 
-- **[`demo_log_ctrl_100.zip.zip`](demo_log_ctrl_100.zip.zip)** (Control ON / Preservation Mode 100%):  
+- **[`demo_log_ctrl_100.zip`](demo_log_ctrl_100.zip)** (Control ON / Preservation Mode 100%):  
   - **Overview:** Preserved profile log with active interceptor control and dynamic upper-bound ceiling.  
   - **Metrics:** Max Latency: **123.3 ms** (~44.3% reduction), $\sigma$: **17.2 ms** (~32.8% convergence), Average: **48.6 ms**
 
-- **[`demo_log_ctrl_ds10.zip.zip`](demo_log_ctrl_ds10.zip.zip)** (Control ON / Spatial 90% Reduction - 10% Resolution):  
+- **[`demo_log_ctrl_ds10.zip`](demo_log_ctrl_ds10.zip)** (Control ON / Spatial 90% Reduction - 10% Resolution):  
   - **Overview:** Profile log with active interceptor control and 10% spatial downsampling applied.  
   - **Metrics:** Max Latency: **128.8 ms**, $\sigma$: **16.9 ms** (Further noise smoothing), Average: **50.5 ms**  
   - **Highlight:** **90%+ footprint reduction** while preserving latency control signatures and structural waveforms 100%.
