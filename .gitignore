@@ -1,0 +1,14 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local Log Directories & Temporary Trace Outputs
+/tb_logs/
+*.tmp
+.DS_Store
+
+# Virtual Environments
+venv/
+.venv/
+env/
