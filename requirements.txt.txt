@@ -1,0 +1,5 @@
+# Python 3.8+ Standard Library requirements
+# Core utilities rely on standard modules: gzip, json, math, re, gc, argparse, glob
+
+# Optional dependencies for visualization / TensorBoard log inspection
+tensorboard>=2.10.0
