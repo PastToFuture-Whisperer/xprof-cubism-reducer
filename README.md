@@ -214,6 +214,15 @@ Thus, after allowing ample time for review, validation, and dialogue, should the
 
 In fact, preliminary intellectual property procedures are already underway. Should this work remain unaddressed for an extended period, these insights will inevitably diffuse into the public domain or take root elsewhere. Time, after all, is not indefinite.
 
+## Contact & Inquiries
+
+To maintain operational security and prevent automated spam, direct personal contact details are not disclosed here.
+
+For formal technical inquiries, collaboration proposals, or private discussions:
+Please leave a brief note with your **LinkedIn profile (or corporate/academic affiliation)** in the [Community](../../discussions) tab. 
+
+Once verified, I will reach out to you directly via LinkedIn.
+
 ---
 
 ## 4. Closing Remarks (The Last Stand)
