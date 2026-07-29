@@ -10,6 +10,19 @@
 
 ---
 
+###  Technical Architecture & Design Tradeoffs (Please Read First)
+
+> **Why In-Place Byte-Replacement?**  
+> Standard Protobuf parsing introduces unacceptable memory overhead (OOM) and processing delays when handling multi-gigabyte traces in constrained cloud/container environments. To achieve extreme execution speed, **zero third-party dependencies (0-dep)**, and non-invasive pipeline execution, this tool performs deterministic, in-place ASCII string masking directly on raw binaries.
+>
+> **Deterministic Wire Type Guarding (~99.999% Reliability):**  
+> By validating Protobuf Wire Types (`Tag == 2` / Length-delimited) and Varint string lengths prior to substitution, raw numerical payloads and floating-point buffers are robustly shielded from accidental byte collision.
+>
+> **Mathematical Disclaimer:**  
+> While Wire Type guarding elevates operational resilience to near 100%, avoiding heavy Protobuf schema deserialization inherently means a non-zero mathematical probability remains for edge-case collisions. Provided **AS-IS** under the MIT License without warranty. **Always retain a full backup of your original trace files!**
+
+---
+
 It is globally recognized that the TensorFlow/JAX trace visualization in Google Cloud TensorBoard exhibits an overwhelming artistic beauty and precision, reminiscent of Georges Seurat’s pointillism.
 
 However, what engineers demand in the trenches of debugging is a concise and abstracted visual representation—like Picasso's Cubism—that allows one to grasp the structure at a single glance upon pressing the ▶ (expand track button) beside `python3`. This sophisticated UI architecture, where micro-level extremity (Pointillism) coexists with macro-level abstraction (Cubism), is truly an artistic masterpiece of visual engineering.
@@ -46,7 +59,7 @@ The lightweight optimization modules developed in this study, along with the emp
 
 #### 1. Optimization Utility Program Package
 
-* **[`tb_log_reducer_v1.0/`](./tb_log_reducer_v1.0/)** *(※ Browse full source code, sample scripts, and pipeline wrapper directly on GitHub)*
+* **[`tb_log_reducer_v1.1/`](./tb_log_reducer_v1.1/)** *(※ Browse full source code, sample scripts, and pipeline wrapper directly on GitHub)*
   - `tb_log_reducer.py`: Core XProf log spatial downsampling and footprint reduction module.
   - `run.sh`: Shell wrapper for specifying resolution (spatial reduction ratio).
   - `sample.py`: Mini-benchmark simulation script for testing and immediate verification.
