@@ -4,7 +4,7 @@
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Compatibility](https://img.shields.io/badge/TensorBoard-XProf%20Compatible-orange.svg)
 ![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-brightgreen.svg)
-
+[![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Repository-yellow.svg)](https://huggingface.co/PastToFuture-Whisperer/xprof-cubism-reducer)
 > **Gift from a Last Legacy White-Hat Hacker**  
 > **XProf Cubism: 90%+ TensorBoard Log Footprint Reduction (Spatial Downsampling & Grid Aggregation)**
 
