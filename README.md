@@ -80,15 +80,15 @@ The lightweight optimization modules developed in this study, along with the emp
 
 *(※ Download and extract individual log archives, then run `tensorboard --logdir ./<directory_name>` to inspect waveforms and metrics directly)*
 
-- **[`demo_log_raw.zip`](demo_log_raw.zip)** (Control OFF / Resolution 100%):  
+- **[`demo_log_raw.zip`](examples/demo_log_raw.zip)** (Control OFF / Resolution 100%):  
   - **Overview:** Raw, unmanaged physical spike log without interceptor control.  
   - **Metrics:** Max Latency: **221.4 ms**, $\sigma$: **25.6 ms**, Average: **50.0 ms**
 
-- **[`demo_log_ctrl_100.zip`](demo_log_ctrl_100.zip)** (Control ON / Preservation Mode 100%):  
+- **[`demo_log_ctrl_100.zip`](examples/demo_log_ctrl_100.zip)** (Control ON / Preservation Mode 100%):  
   - **Overview:** Preserved profile log with active interceptor control and dynamic upper-bound ceiling.  
   - **Metrics:** Max Latency: **123.3 ms** (~44.3% reduction), $\sigma$: **17.2 ms** (~32.8% convergence), Average: **48.6 ms**
 
-- **[`demo_log_ctrl_ds10.zip`](demo_log_ctrl_ds10.zip)** (Control ON / Spatial 90% Reduction - 10% Resolution):  
+- **[`demo_log_ctrl_ds10.zip`](examples/demo_log_ctrl_ds10.zip)** (Control ON / Spatial 90% Reduction - 10% Resolution):  
   - **Overview:** Profile log with active interceptor control and 10% spatial downsampling applied.  
   - **Metrics:** Max Latency: **128.8 ms**, $\sigma$: **16.9 ms** (Further noise smoothing), Average: **50.5 ms**  
   - **Highlight:** **90%+ footprint reduction** while preserving latency control signatures and structural waveforms 100%.
@@ -184,9 +184,9 @@ In my primary research, I have successfully developed "Deterministic Upper-Bound
 
 | Execution Mode / Parameter | Max Latency Spike | Latency Variance (Std Dev $\sigma$) | Average Throughput | Log Visibility & Download |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Control OFF (Raw Jitter)** | **221.4 ms** | **25.6 ms** | **50.0 ms** | Unbounded initialization & random spikes<br> [`log_raw_100.zip`](log_raw_100.zip) |
-| **2. Control ON (Resolution 100%)** | **123.3 ms** (~44.3% reduction) | **17.2 ms** (~32.8% convergence) | **48.6 ms** | Dynamic ceiling caps max latency instantly<br> [`log_controlled_100.zip`](log_controlled_100.zip) |
-| **3. Control ON + Downsampled (Resolution 10%)** | **128.8 ms** (Boundary preserved) | **16.9 ms** (Enhanced noise smoothing) | **50.5 ms** | **90%+ footprint reduction** preserved<br> [`log_controlled_ds10.zip`](log_controlled_ds10.zip) |
+| **1. Control OFF (Raw Jitter)** | **221.4 ms** | **25.6 ms** | **50.0 ms** | Unbounded initialization & random spikes<br> [`log_raw_100.zip`](examples/log_raw_100.zip) |
+| **2. Control ON (Resolution 100%)** | **123.3 ms** (~44.3% reduction) | **17.2 ms** (~32.8% convergence) | **48.6 ms** | Dynamic ceiling caps max latency instantly<br> [`log_controlled_100.zip`](examples/log_controlled_100.zip) |
+| **3. Control ON + Downsampled (Resolution 10%)** | **128.8 ms** (Boundary preserved) | **16.9 ms** (Enhanced noise smoothing) | **50.5 ms** | **90%+ footprint reduction** preserved<br> [`log_controlled_ds10.zip`](examples/log_controlled_ds10.zip) |
 
 ---
 
