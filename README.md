@@ -129,7 +129,7 @@ python3 tb_log_reducer.py --input_dir ./raw_logs --output_dir ./reduced_logs
 
 While implementation demanded considerable trial and error, the final architecture produced results exceeding expectations. Most notably, in log footprint reduction—the primary metric—it achieved an absolute, empirical fact of over 90% size reduction. The count of event objects dropped drastically, resulting in remarkably fluid UI rendering.
 
-![XProf Cubism Benchmark Evidence](fig01_waveform_alignment_concept.png)
+![XProf Cubism Benchmark Evidence](assets/fig01_waveform_alignment_concept.png)
 
 #### Empirical Metrics: JAX Spatial Memory Workload Benchmark Log
 
@@ -194,7 +194,7 @@ In my primary research, I have successfully developed "Deterministic Upper-Bound
 
 | Control OFF (Raw Trace) | Control ON (Resolution 100%) | Control ON (Resolution 10%) |
 | :---: | :---: | :---: |
-| ![OFF](fig02_tb_profile_raw.png) | ![ON 100%](fig03_tb_profile_controlled_100.png) | ![ON 10%](fig04_tb_profile_controlled_ds10.png) |
+| ![OFF](assets/fig02_tb_profile_raw.png) | ![ON 100%](assets/fig03_tb_profile_controlled_100.png) | ![ON 10%](assets/fig04_tb_profile_controlled_ds10.png) |
 
 > **Figure 1: Real TensorBoard Profile Execution Screenshots.**
 > - **Left (OFF):** Unbounded initialization spikes reach 221.4 ms with wide jitter dispersion ($\sigma=25.6\text{ ms}$).
