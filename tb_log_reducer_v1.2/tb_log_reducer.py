@@ -2,9 +2,13 @@
 # Copyright (c) 2026 PastToFuture-Whisperer
 # SPDX-License-Identifier: MIT
 #
+# Version: 1.2.0
+#
 # This program is a byproduct of the advanced profile optimization research 
 # mentioned in the documentation; those core features are explicitly excluded 
 # from this repository and implemented separately.
+
+__version__ = "1.2.0"
 
 import argparse
 import os
