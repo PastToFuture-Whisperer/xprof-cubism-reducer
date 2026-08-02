@@ -79,7 +79,7 @@ The lightweight optimization modules developed in this study, along with the emp
 
 * **[`tb_log_reducer_v1.2/`](./tb_log_reducer_v1.2/)** *(※ Browse full source code, sample scripts, and pipeline wrapper directly on GitHub)*
   - `tb_log_reducer.py`: Core XProf log spatial downsampling and footprint reduction module.
-  - `run.sh`: Shell wrapper for specifying resolution (spatial reduction ratio).
+  - `run_with_check.sh`: Shell wrapper for specifying resolution (spatial reduction ratio).
   - `sample.py`: Mini-benchmark simulation script for testing and immediate verification.
 
 ---
