@@ -20,6 +20,20 @@ This tool applies spatial downsampling and continuous grid aggregation to ultra-
 
 ---
 
+### Core Mechanism: Spatial Downsampling & Rectangular Merging
+
+To eliminate OOM risks and browser rendering lag, the reducer performs a two-stage spatial optimization directly on trace hierarchies while preserving macro-level timeline profiles:
+
+![Spatial Downsampling and Rectangular Merging](assets/fig05_spatial_ds_cubism_concept.png)
+
+1. **Merged Tiles (Rectangular Consolidation):**
+   Merges consecutive, identical event streams (e.g., repeating sub-operations in tiers A, B, and C) into unified structural spans, drastically reducing the total number of protobuf UI objects.
+
+2. **Dominant Color Overwrite (Spatial Downsampling):**
+   Evaluates dense, noisy event grids (tier D) by spatial dominance. Micro-events are simplified into the dominant color block, stripping out sub-pixel noise without altering overall execution boundaries.
+
+---
+
 ### Technical Architecture & Design Tradeoffs (Please Read First)
 
 > **Why In-Place Byte-Replacement?**  
