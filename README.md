@@ -6,7 +6,7 @@
 ![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-brightgreen.svg)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Repository-yellow.svg)](https://huggingface.co/PastToFuture-Whisperer/xprof-cubism-reducer)
 > **Gift from a Last Legacy White-Hat Hacker**  
-> **XProf Cubism: 90%+ TensorBoard Log Footprint Reduction (Spatial Downsampling & Grid Aggregation)**
+> **XProf Cubism: 90%+ TensorBoard Log Footprint Reduction & Reactivating Dynamic Profiling Workflows**
 
 ---
 
@@ -52,6 +52,20 @@ To eliminate OOM risks and browser rendering lag, the reducer performs a two-sta
 >
 > **Mathematical Disclaimer:**  
 > Provided **AS-IS** under the MIT License without warranty. Always choose the runner script that best fits your environment's safety vs. performance requirements!
+
+---
+
+### Advanced Paradigm: Restoring Dynamic TensorBoard Workflow
+
+Due to the exponential growth of trace log sizes, modern TensorBoard usage has been largely reduced to inspecting heavy, static snapshots after execution. However, leveraging this tool's near-zero overhead (in-place ASCII/byte modification) allows developers to shift from static post-processing to **dynamic, pipeline-integrated debugging**.
+
+#### 1. Real-Time Oscilloscope Streaming
+* **Concept:** Restores the classic, fluid TensorBoard behavior where timeline waveforms update dynamically in real time without freezing the browser.
+* **Implementation:** Deploy a lightweight sidecar process or cron job that periodically captures short trace windows (e.g., every 10 seconds), passes them through `run.sh`, and streams/overwrites the reduced payload directly into TensorBoard’s `logdir`.
+
+#### 2. Event-Triggered Snapshotting ("Drive Recorder" Pattern)
+* **Concept:** Maintains ultra-low memory overhead during routine runs while capturing uncompressed, full-fidelity snapshots only when anomalies occur.
+* **Implementation:** Run the reducer as a continuous front-end filter for macro-level monitoring. Configure pipeline triggers (such as latency spikes, memory allocation anomalies, or GPU/TPU stalls) to automatically slice and preserve the uncompressed raw trace buffer surrounding the exact timestamp of the event.
 
 ---
 
