@@ -39,7 +39,7 @@ Run your Python pipeline through `run.sh` to stream/reduce trace logs on the fly
 ./run.sh 10 sample.py 500 --logdir ./logdir_reduced
 ```
 
-*For detailed technical specifications, verification benchmarks, and fail-safe options, see [Section 1: Technical Specifications & Full Toolkit](#1-technical-specifications--full-toolkit).*
+*For detailed technical specifications, verification benchmarks, and fail-safe options, see [Section 1: Technical Specifications & Full Toolkit](#spec-toolkit).*
 
 ---
 
@@ -111,7 +111,7 @@ One day, while contemplating the TensorBoard interface, a single realization str
 This program was developed to harmonize "artistry and utility"—a quiet delivery of the "final brushstroke" left behind between the easels by a great artist.
 
 ---
-
+<a name="spec-toolkit"></a>
 ## 1. Technical Specifications & Full Toolkit (`tb_log_reducer.py` & `run_with_check.sh`)
 
 This module is a lightweight post-processor that restructures the massive density of event objects in TensorBoard trace logs (XProf format) via an $O(N)$ deterministic algorithm. It prevents browser (V8/WebGL) rendering crashes while drastically reducing the log footprint (file size).
