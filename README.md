@@ -5,8 +5,8 @@
 ![Compatibility](https://img.shields.io/badge/TensorBoard-XProf%20Compatible-orange.svg)
 ![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-brightgreen.svg)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Repository-yellow.svg)](https://huggingface.co/PastToFuture-Whisperer/xprof-cubism-reducer)
-> **Gift from a Last Legacy White-Hat Hacker**  
-> **XProf Cubism: 90%+ TensorBoard Log Footprint Reduction & Reactivating Dynamic Profiling Workflows**
+> **The First Zero-Dependency In-Place Trace Reducer for TensorBoard / XProf**  
+> **Reactivating Dynamic MLOps Profiling Workflows by Bypassing Browser Rendering Bottlenecks**
 
 ---
 
@@ -17,6 +17,29 @@ This tool applies spatial downsampling and continuous grid aggregation to ultra-
 * **Log File Size Reduction:** **~80% – 95%** reduction in total JSON/GZ storage footprint.
 * **Event Object Count Reduction:** **~90% – 99%** reduction in raw trace event objects (`ph: "X"`).
 * **Browser Rendering & Load Time:** **>90% faster** timeline rendering (resolving browser freeze and V8/WebGL OOM crashes on multi-gigabyte traces).
+
+---
+
+###  Quick Start Guide
+
+Zero third-party dependencies required—runs out of the box using pure standard Python 3.8+ and Bash:
+
+#### Option A: Direct Reduction (Standard Workflows)
+Process existing raw trace directories directly with standard Python:
+
+```bash
+python3 tb_log_reducer.py --input_dir ./raw_logs --output_dir ./reduced_logs
+```
+
+#### Option B: Transparent Execution via Safe Wrapper
+Run your Python pipeline through `run.sh` to stream/reduce trace logs on the fly at **10% resolution** (~90% footprint reduction):
+
+```bash
+# Usage: ./run.sh [Resolution %] [Target Script] [Arguments...]
+./run.sh 10 sample.py 500 --logdir ./logdir_reduced
+```
+
+*For detailed technical specifications, verification benchmarks, and fail-safe options, see [Section 1: Technical Specifications & Full Toolkit](#1-technical-specifications--full-toolkit).*
 
 ---
 
@@ -61,11 +84,17 @@ Due to the exponential growth of trace log sizes, modern TensorBoard usage has b
 
 #### 1. Real-Time Oscilloscope Streaming
 * **Concept:** Restores the classic, fluid TensorBoard behavior where timeline waveforms update dynamically in real time without freezing the browser.
-* **Implementation:** Deploy a lightweight sidecar process or cron job that periodically captures short trace windows (e.g., every 10 seconds), passes them through `run.sh`, and streams/overwrites the reduced payload directly into TensorBoard’s `logdir`.
+* **Implementation:** Deploy a lightweight sidecar process or cron job that periodically captures short trace windows (e.g., every 10 seconds), passes them through `run_with_check.sh`, and streams/overwrites the reduced payload directly into TensorBoard’s `logdir`.
 
 #### 2. Event-Triggered Snapshotting ("Drive Recorder" Pattern)
 * **Concept:** Maintains ultra-low memory overhead during routine runs while capturing uncompressed, full-fidelity snapshots only when anomalies occur.
 * **Implementation:** Run the reducer as a continuous front-end filter for macro-level monitoring. Configure pipeline triggers (such as latency spikes, memory allocation anomalies, or GPU/TPU stalls) to automatically slice and preserve the uncompressed raw trace buffer surrounding the exact timestamp of the event.
+
+#### 3. Batch Log Archive Compression
+* **Concept:** Effortlessly post-process and shrink existing multi-gigabyte historical trace archives into compact representations for efficient long-term storage or team distribution.
+* **Implementation:** Run `tb_log_reducer.py` in batch mode over legacy log directories before pushing artifacts to cloud storage (e.g., S3 / GCS bucket archiving).
+
+> **Disclaimer:** While this utility operates with a fail-safe architecture, users converting existing log archives should maintain full backups prior to execution. The author assumes no liability for data modifications or operational losses resulting from the use or adaptation of this tool.
 
 ---
 
@@ -83,7 +112,7 @@ This program was developed to harmonize "artistry and utility"—a quiet deliver
 
 ---
 
-## 1. Quick Start & Technical Spec (`tb_log_reducer.py` & `run.sh`)
+## 1. Technical Specifications & Full Toolkit (`tb_log_reducer.py` & `run_with_check.sh`)
 
 This module is a lightweight post-processor that restructures the massive density of event objects in TensorBoard trace logs (XProf format) via an $O(N)$ deterministic algorithm. It prevents browser (V8/WebGL) rendering crashes while drastically reducing the log footprint (file size).
 
@@ -107,8 +136,9 @@ The lightweight optimization modules developed in this study, along with the emp
 
 * **[`tb_log_reducer_v1.2.0/`](./tb_log_reducer_v1.2.0/)** *(※ Browse full source code, sample scripts, and pipeline wrapper directly on GitHub)*
   - `tb_log_reducer.py`: Core XProf log spatial downsampling and footprint reduction module.
-  - `run_with_check.sh`: Shell wrapper for specifying resolution (spatial reduction ratio).
+  - `run_with_check.sh`: **[Recommended]** Safe production wrapper featuring zero-dependency pre/post verification and instant auto-rollback protection.
   - `sample.py`: Mini-benchmark simulation script for testing and immediate verification.
+  - *Note: The raw in-place wrapper (`run.sh`) for zero-overhead execution has been moved to the `legacy/` directory for advanced users who accept manual safety trade-offs.*
 
 ---
 
@@ -196,9 +226,6 @@ For this reason, I chose not to remove "Spatial Downsampling"—despite its inhe
 
 By retaining this process, I realized a concept extending far beyond mere data reduction: a "major byproduct" along an entirely different vector. I shall return to this point shortly.
 
-Furthermore, applying this module to convert and lighten existing log archives is straightforward. However, when converting existing logs, please ensure you maintain a full backup prior to execution.  
-*(※ Any data modifications resulting from the use or adaptation of this technology are disclaimed)*
-
 This concludes the prototype I built out of pure hobbyist curiosity while casually exploring Google Cloud.  
 From here, how profile data should be seamlessly and elegantly "abstracted into information structures (Cubism)", or what lies beyond simple rectangular merging as the true ultimate solution, remains an open quest. I release this utility as open source to explore these frontiers together with engineers worldwide.
 
@@ -206,10 +233,10 @@ From here, how profile data should be seamlessly and elegantly "abstracted into 
 
 ### Supplementary Notes, Disclaimers, and License
 
-- **Infrastructure Cost Implications:** If widely adopted, this utility may temporarily improve storage utilization efficiency in environments like Google Cloud, leading to substantial infrastructure cost reductions (which, in the short term, Google might not necessarily desire). However, in the long run, we anticipate that enhanced profiling fluidity will further accelerate compute resource (TPU/GPU) utilization across multi-cloud environments.
-- **License:** The software published in this repository (`tb_log_reducer.py` and the accompanying script `run.sh`) is a completely original implementation provided under the MIT License.
-- **Enterprise Compliance:** The open-source scripts (`tb_log_reducer.py` / `run.sh`) have zero third-party library dependencies (0 dependencies), operating entirely within standard Python and Bash environments. Consequently, they instantly pass corporate supply-chain security, legal, and licensing audits for safe enterprise deployment.
-- **Proprietary Core IP Notice:** The algorithms and source code regarding "Deterministic TPU Latency Upper-Bound Guarding and Waveform Alignment" presented in Section 3 are strictly excluded from this MIT License. These constitute proprietary Intellectual Property (IP) reserved for future licensing or joint development, remain black-boxed, and are not included in this repository.
+- **Infrastructure Cost Implications:** If widely adopted, this utility dramatically optimizes cloud storage efficiency, reducing idle logging overhead. In the long run, eliminating these storage bottlenecks directly accelerates compute resource (TPU/GPU) utilization and iteration velocity across multi-cloud environments.
+- **License:** The software published in this repository (`tb_log_reducer.py` and accompanying scripts) is a completely original implementation provided under the MIT License.
+- **Enterprise Compliance:** The open-source scripts (`tb_log_reducer.py` / `run_with_check.sh`) have zero third-party library dependencies (0 dependencies), operating entirely within standard Python and Bash environments. Consequently, they instantly pass corporate supply-chain security, legal, and licensing audits for safe enterprise deployment.
+- **Proprietary Core IP Notice:** Note that all code within this repository is 100% open-source under the MIT License. Advanced concepts discussed in Section 3 ("Deterministic TPU Latency Upper-Bound Guarding and Waveform Alignment") represent separate proprietary Intellectual Property (IP) and are strictly excluded from this repository.
 
 ## 3. Advanced Application: TPU Latency Variance Control & Profile Smoothing
 ### 【Postscript: My True Research — Cloud TPU Jitter Mitigation】
@@ -220,9 +247,9 @@ In my primary research, I have successfully developed "Deterministic Upper-Bound
 
 | Execution Mode / Parameter | Max Latency Spike | Latency Variance (Std Dev $\sigma$) | Average Throughput | Log Visibility & Download |
 | :--- | :--- | :--- | :--- | :--- |
-| **1. Control OFF (Raw Jitter)** | **221.4 ms** | **25.6 ms** | **50.0 ms** | Unbounded initialization & random spikes<br> [`log_raw_100.zip`](examples/log_raw_100.zip) |
-| **2. Control ON (Resolution 100%)** | **123.3 ms** (~44.3% reduction) | **17.2 ms** (~32.8% convergence) | **48.6 ms** | Dynamic ceiling caps max latency instantly<br> [`log_controlled_100.zip`](examples/log_controlled_100.zip) |
-| **3. Control ON + Downsampled (Resolution 10%)** | **128.8 ms** (Boundary preserved) | **16.9 ms** (Enhanced noise smoothing) | **50.5 ms** | **90%+ footprint reduction** preserved<br> [`log_controlled_ds10.zip`](examples/log_controlled_ds10.zip) |
+| **1. Control OFF (Raw Jitter)** | **221.4 ms** | **25.6 ms** | **50.0 ms** | Unbounded initialization & random spikes<br>[`log_raw_100.zip`](examples/log_raw_100.zip) |
+| **2. Control ON (Resolution 100%)** | **123.3 ms** *(~44.3% reduction)* | **17.2 ms** *(~32.8% convergence)* | **48.6 ms** | Dynamic ceiling caps max latency instantly<br>[`log_controlled_100.zip`](examples/log_controlled_100.zip) |
+| **3. Control ON + Downsampled (Resolution 10%)** | **128.8 ms** *(Boundary preserved)* | **16.9 ms** *(Enhanced noise smoothing)* | **50.5 ms** | **90%+ footprint reduction** preserved<br>[`log_controlled_ds10.zip`](examples/log_controlled_ds10.zip) |
 
 ---
 
@@ -271,7 +298,7 @@ Truth be told, validating this technology—counting from initial data gathering
 
 Thus, after allowing ample time for review, validation, and dialogue, should the outcome not align with my hopes, I plan to move forward this autumn with the next phases, including further expansion and adapting this technology to alternative environments.
 
-In fact, preliminary intellectual property procedures are already underway. Should this work remain unaddressed for an extended period, these insights will inevitably diffuse into the public domain or take root elsewhere. Time, after all, is not indefinite.
+In line with my research roadmap, preliminary intellectual property procedures are currently underway. To ensure these insights contribute meaningfully to the next generation of AI infrastructure, I plan to proceed with Phase 2 this autumn—expanding this framework to alternative hardware architectures and multi-cloud environments.
 
 ## Contact & Inquiries
 
@@ -285,6 +312,8 @@ Once verified, I will reach out to you directly via LinkedIn.
 ---
 
 ## 4. Closing Remarks (The Last Stand)
+
+> **A Gift from a Last Legacy White-Hat Hacker**
 
 Perhaps an older-generation engineer like myself, fading into the background of a rapidly shifting era, ought to remain unseen—holding a torch proudly in some quiet corner of the internet. From such a comfortable vantage point, one can casually share innovations with the world.
 
