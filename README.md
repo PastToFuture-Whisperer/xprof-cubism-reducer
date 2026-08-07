@@ -78,6 +78,25 @@ To eliminate OOM risks and browser rendering lag, the reducer performs a two-sta
 
 ---
 
+### Operational Prerequisites & Safety Guards
+
+To ensure flawless execution and zero-data-loss operation, please verify the following environment prerequisites prior to running the reducer:
+
+1. **Process Completion Requirement (Phase 1 Finalization):**  
+   Ensure that the target workload, training loop, or TensorBoard profiling session has **completely finished writing** trace logs (`.trace.json.gz`). Executing the reducer on actively written/streaming files may lead to incomplete JSON parsing errors.
+2. **Storage Allocation Guard:**  
+   The host partition containing the target `logdir` must have free disk space at least equal to the total size of the raw trace files (required for temporary atomic `.tmp` buffers during processing).
+3. **FileSystem Permissions (Container / Cloud Shell Environments):**  
+   The executing user process must possess explicit `read` and `write` permissions for the target `logdir` and its subdirectories. In containerized environments (Docker/Kubernetes/SageMaker), mismatched UID/GID or read-only volume mounts will block atomic file replacements (`os.replace`).
+4. **Concurrency & Race Condition Prevention:**  
+   Do not trigger multiple instances of the reducer simultaneously against the same `logdir`. Concurrent executions may cause race conditions or backup file collisions (`.bak` overwrites).
+5. **Execution Integrity & Signal Trapping:**  
+   While `run_with_check.sh` implements automated POSIX signal trapping (restoring original backups upon `SIGINT`/`SIGTERM`), force-killing the process via uncatchable signals (`kill -9` / `SIGKILL`) or sudden power failure may leave uncleaned `.tmp` or `.bak` files.
+
+*Note: The author assumes no liability for operational interruptions or file corruptions resulting from premature execution, storage exhaustion, permission mismatches, or unmanaged process termination.*
+
+---
+
 ### Advanced Paradigm: Restoring Dynamic TensorBoard Workflow
 
 Due to the exponential growth of trace log sizes, modern TensorBoard usage has been largely reduced to inspecting heavy, static snapshots after execution. However, leveraging this tool's near-zero overhead (in-place ASCII/byte modification) allows developers to shift from static post-processing to **dynamic, pipeline-integrated debugging**.
