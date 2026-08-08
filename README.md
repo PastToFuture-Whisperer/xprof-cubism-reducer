@@ -95,8 +95,18 @@ To ensure flawless execution and zero-data-loss operation, please verify the fol
 
 *Note: The author assumes no liability for operational interruptions or file corruptions resulting from premature execution, storage exhaustion, permission mismatches, or unmanaged process termination.*
 
----
+> ** Need to process active training logs on the fly?**  
+> If you must reduce logs during an active training run, avoid processing live files directly. Instead, safely snapshot and process them via a staging buffer:
+> ```bash
+> # Snapshot active logs to a temporary staging area, then run the reducer safely
+> rsync -a --include='*/' --include='*.trace.json.gz' --exclude='*' ./active_logdir/ ./staging_logdir/
+> ./run_with_check.sh 10 sample.py --logdir ./staging_logdir/
+> ```
+> *Note: This staging approach can also be adapted for real-time waveform monitoring workflows (see [Advanced Paradigm](#advanced-paradigm-restoring-dynamic-tensorboard-workflow)). Any custom modifications or pipeline adaptations are implemented entirely at your own risk.*  
+> *For multi-process lock-guards and shared storage recipes, stay tuned for our upcoming **Advanced Integration Guide**.*
 
+---
+<a name="advanced-paradigm-restoring-dynamic-tensorboard-workflow"></a>
 ### Advanced Paradigm: Restoring Dynamic TensorBoard Workflow
 
 Due to the exponential growth of trace log sizes, modern TensorBoard usage has been largely reduced to inspecting heavy, static snapshots after execution. However, leveraging this tool's near-zero overhead (in-place ASCII/byte modification) allows developers to shift from static post-processing to **dynamic, pipeline-integrated debugging**.
