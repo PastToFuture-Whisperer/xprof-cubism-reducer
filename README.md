@@ -96,7 +96,7 @@ To ensure flawless execution and zero-data-loss operation, please verify the fol
 *Note: The author assumes no liability for operational interruptions or file corruptions resulting from premature execution, storage exhaustion, permission mismatches, or unmanaged process termination.*
 
 > ** Need to process active training logs on the fly?**  
-> If you must reduce logs during an active training run, avoid processing live files directly. Instead, safely snapshot and process them via a staging buffer:
+> If you must reduce logs during an active training run, avoid processing live files directly. Instead, copy them to a staging buffer via `rsync`—any incomplete mid-write chunks will be automatically verified and safely handled by `run_with_check.sh`:
 > ```bash
 > # Snapshot active logs to a temporary staging area, then run the reducer safely
 > rsync -a --include='*/' --include='*.trace.json.gz' --exclude='*' ./active_logdir/ ./staging_logdir/
