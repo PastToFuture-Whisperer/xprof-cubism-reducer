@@ -95,15 +95,30 @@ To ensure flawless execution and zero-data-loss operation, please verify the fol
 
 *Note: The author assumes no liability for operational interruptions or file corruptions resulting from premature execution, storage exhaustion, permission mismatches, or unmanaged process termination.*
 
-> ** Need to process active training logs on the fly?**  
-> If you must reduce logs during an active training run, avoid processing live files directly. Instead, copy them to a staging buffer via `rsync`—any incomplete mid-write chunks will be automatically verified and safely handled by `run_with_check.sh`:
-> ```bash
-> # Snapshot active logs to a temporary staging area, then run the reducer safely
-> rsync -a --include='*/' --include='*.trace.json.gz' --exclude='*' ./active_logdir/ ./staging_logdir/
-> ./run_with_check.sh 10 sample.py --logdir ./staging_logdir/
-> ```
-> *Note: This staging approach can also be adapted for real-time waveform monitoring workflows (see [Advanced Paradigm](#advanced-paradigm-restoring-dynamic-tensorboard-workflow)). Any custom modifications or pipeline adaptations are implemented entirely at your own risk.*  
-> *For multi-process lock-guards and shared storage recipes, stay tuned for our upcoming **Advanced Integration Guide**.*
+---
+
+### Community Feedback & Support
+
+While this utility is designed with a strict 100% Safety Guarantee at its core, real-world machine learning environments vary widely. If you encounter unexpected behavior, edge cases, or unique multi-GPU/TPU setups, please feel free to open an Issue or Discussion. We are eager to hear your findings and work on tailored solutions or workarounds for your specific environment.
+
+### A Small Request for Sharing
+
+Due to current visibility restrictions across certain developer platforms (e.g., shadowban constraints on Reddit), our ability to reach engineers struggling with TensorBoard log bloat is severely limited.
+
+If this tool has helped optimize your storage or training pipelines, sharing it with your colleagues, team, or technical network would be deeply appreciated. Your support helps ensure this open-sourced utility reaches those who truly need it.
+
+---
+
+### Advanced Pipeline Integration & Customization
+
+If you need to deploy this utility in production pipelines or complex server environments, please refer to the [Advanced Integration Guide](docs/ADVANCED_INTEGRATION_GUIDE.md) for practical recipes addressing:
+
+* **Multi-Process Concurrency & Lock-Guards:** Preventing read/write conflicts using `flock` or atomic `mkdir` locks.
+* **Network Shared Storage & Containers:** Safely handling NFS/SMB lock limitations and container permission boundaries.
+* **Live Inspection & Direct Writers:** Inspecting active kernel file handles via `fuser`/`lsof` before processing.
+* **Real-Time Monitoring & Streaming Workflows:** Oscilloscope-style real-time trace reduction via `rsync` staging.
+
+*Note: The recipes in the guide are provided as reference implementations. Any pipeline adaptations or custom integrations are implemented entirely at your own risk.*
 
 ---
 <a name="advanced-paradigm-restoring-dynamic-tensorboard-workflow"></a>
@@ -270,7 +285,21 @@ From here, how profile data should be seamlessly and elegantly "abstracted into 
 ## 3. Advanced Application: TPU Latency Variance Control & Profile Smoothing
 ### 【Postscript: My True Research — Cloud TPU Jitter Mitigation】
 
-In my primary research, I have successfully developed "Deterministic Upper-Bound Guarding and Waveform Alignment for TPU Execution Latency"—a technology that bounds and smooths latency variance in TPU execution down to a stable, uniform window within the program pipeline. Below are the corresponding profile figures and benchmark data.
+In my primary research, I have successfully developed **"Deterministic Upper-Bound Guarding and Waveform Alignment for TPU Execution Latency"**—a technology that bounds and smooths latency variance in TPU execution down to a stable, uniform window within the program pipeline.
+
+#### Theoretical Backbone: Discrete Difference Bounding & Waveform Alignment
+
+```text
+  [ Raw Execution Phase ]        [ Discrete Difference Interceptor ]       [ Controlled Waveform ]
+  High-Frequency Jitter   ===>   Bounded via Babbage Engine Model  ===>   Uniform Execution Window
+  (Spikes / Non-Determinism)     (Relative Dynamic Ceiling)               (Bounded Variance σ)
+```
+
+In asynchronous parallel execution and high-performance computing (HPC) environments—such as multi-GPU/TPU clusters—non-deterministic execution profiling jitter frequently corrupts measurement fidelity and undermines performance reproducibility. Transient hardware initialization stalls, memory bus contention, and runtime dynamic scheduling induce unpredictable latency spikes, masking genuine execution bottlenecks within noisy trace profiles.
+
+To address this challenge at the fundamental layer, we introduce a novel runtime interception control paradigm inspired by Charles Babbage’s classical *Difference Engine*. By modeling temporal execution variations through discrete order differences, the system dynamically establishes a mathematical relative upper-bound ceiling. When transient execution energy exceeds this boundary, the interceptor smoothly absorbs and redistributes excess temporal momentum across sequential compute steps via discrete feedback loops, dynamically bound through JAX/XLA tensor pad operations.
+
+This theoretical framework proves that non-deterministic, high-frequency execution jitter can be deterministically bounded and aligned into a uniform execution window—transforming chaotic runtime waveforms into predictable, mathematically bounded profiles without sacrificing net algorithmic throughput. Below are the corresponding empirical profile figures and benchmark data.
 
 #### Benchmark Evidence & Verification Log Data
 
@@ -311,7 +340,7 @@ While the core technology remains black-boxed (to protect intellectual property 
 
 For engineers and researchers interested in deeper technical discussions, feedback, or potential multi-cloud/compiler-layer (XLA) applications regarding the concepts and empirical findings (What) of "TPU Latency Variance Control", I welcome private inquiries.
 
-However, my architectural philosophy strictly mandates minimal structures of a few hundred lines—not bloated thousands. Therefore, proposals aimed at arbitrarily inflating functionality are respectfully discouraged. Technical discussions within this repository will be graciously conducted strictly within the scope of the open-sourced "Lightweight Utility (Spatial Downsampling & Grid Aggregation)".
+This project is built upon a design philosophy that prioritizes a lightweight, minimal, and focused codebase—aiming to maintain a clean structure of a few hundred lines. While we respectfully strive to keep the core utility simple rather than expanding it into a complex feature set, we genuinely value community insights and constructive technical feedback. Discussions within this repository are focused on refining and supporting our core open-sourced tool: the "Lightweight Utility (Spatial Downsampling & Grid Aggregation)".
 
 My goal is to advance this technology further, ultimately establishing a comprehensive paradigm for fully suppressing and smoothing TPU execution latency and runtime waveforms.
 
