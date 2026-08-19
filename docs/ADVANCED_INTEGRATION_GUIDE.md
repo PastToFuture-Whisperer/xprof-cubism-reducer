@@ -1,5 +1,6 @@
 # Advanced Integration Guide
-**Multi-Process Lock-Guards, Shared Storage, and Edge-Case Operations**
+**Multi-Process Lock-Guards, Shared Storage, Dynamic Adaptation, and Pipeline Operations**  
+*Last Updated: 2026-08-19*
 
 ---
 
@@ -137,8 +138,94 @@ done
 
 ---
 
-## 5. Summary & Operational Principles
+## 5. Dynamic Resolution Adaptation Recipe [Added: 2026-08-19]
+
+This implementation recipe provides an automated wrapper that inspects the raw event density and compressed file size of target traces prior to processing, dynamically calculating the optimal `--resolution` percentage.
+
+### 5.1 Concept & Operational Value
+As noted in the primary documentation, processing efficiency and tile consolidation behavior depend heavily on the underlying trace structure (e.g., presence of transient instant events vs. continuous duration events). Operating at a fixed resolution across wildly varying trace sizes can either lead to under-reduction on ultra-dense logs or unnecessary over-smoothing on light traces.
+
+This wrapper pre-scans file metadata to dynamically scale down the target resolution for massive traces while maintaining higher fidelity for smaller profiles.
+
+### 5.2 Implementation Recipe: Density-Aware Wrapper (`adaptive_run.sh`)
+
+```bash
+#!/usr/bin/env bash
+# [ADAPTIVE WRAPPER] Dynamically calculates optimal resolution based on trace file size
+
+LOGDIR="${1:-./tb_logs}"
+TARGET_TRACE=$(find "${LOGDIR}" -type f -name "*.trace.json.gz" | head -n 1)
+
+if [ -z "${TARGET_TRACE}" ]; then
+  echo "[WARN] No trace file found in ${LOGDIR}. Exiting."
+  exit 0
+fi
+
+# 1. Inspect compressed trace size in Megabytes (MB)
+FILE_SIZE_MB=$(du -m "${TARGET_TRACE}" | cut -f1)
+
+# 2. Dynamically calculate resolution percentage based on payload scale
+if [ "${FILE_SIZE_MB}" -gt 200 ]; then
+  CALCULATED_RES="5.0"   # Heavy trace (>200MB): Apply aggressive downsampling
+elif [ "${FILE_SIZE_MB}" -gt 50 ]; then
+  CALCULATED_RES="15.0"  # Medium trace (50MB-200MB): Balanced downsampling
+else
+  CALCULATED_RES="50.0"  # Light trace (<50MB): Preserve high granularity
+fi
+
+echo "[INFO] Detected trace payload: ${FILE_SIZE_MB} MB -> Dynamically assigned resolution:${CALCULATED_RES}%"
+
+# 3. Execute fail-safe reduction with dynamically resolved parameters
+./run_with_check.sh "${CALCULATED_RES}" sample.py --logdir "${LOGDIR}"
+```
+
+---
+
+## 6. Batch Log Archive Compression & Cloud Pipeline Sync [Added: 2026-08-19]
+
+A production-grade batch recipe designed to process multi-gigabyte historical trace archives across nested log directories, verify structural integrity, and stream compact representations to cloud object storage (AWS S3 / Google Cloud Storage) prior to local cleanup.
+
+### 6.1 Concept & Pipeline Architecture
+When archiving historical profiling datasets or executing post-training hooks in CI/CD pipelines, transferring raw uncompressed traces severely wastes cloud bandwidth and storage capacity. This batch script recursively locates legacy trace directories, applies `run_with_check.sh` sequentially to guarantee zero corruption, uploads the shrunk artifacts, and frees up local disk space.
+
+### 6.2 Implementation Recipe: Recursive Archive & Cloud Upload (`batch_archive_sync.sh`)
+
+```bash
+#!/usr/bin/env bash
+# [BATCH ARCHIVE REDUCER] Recursively reduces legacy log archives and syncs to Cloud Storage
+
+ARCHIVE_ROOT="${1:-./historical_logs}"
+GCS_TARGET_BUCKET="${2:-gs://my-mlops-profile-archive/tb_logs}"
+RESOLUTION="${3:-10.0}"
+
+echo "[INFO] Starting batch reduction pipeline across: ${ARCHIVE_ROOT}"
+
+# 1. Recursively find all unique directories containing .trace.json.gz files
+find "${ARCHIVE_ROOT}" -type f -name "*.trace.json.gz" -exec dirname {} \; | sort -u | while read -r target_dir; do
+  echo "---------------------------------------------------------------------"
+  echo "[PROCESSING] Target directory: ${target_dir}"
+  
+  # 2. Execute fail-safe reduction directly on target directory
+  python3 tb_log_reducer.py --logdir "${target_dir}" --resolution "${RESOLUTION}"
+  
+  # 3. Optional: Sync reduced artifacts to Cloud Object Storage (GCS / S3)
+  if command -v gcloud >/dev/null 2>&1; then
+    echo "[CLOUD SYNC] Uploading ${target_dir} to${GCS_TARGET_BUCKET}..."
+    gcloud storage rsync -r "${target_dir}" "${GCS_TARGET_BUCKET}/$(basename "${target_dir}")"
+  elif command -v aws >/dev/null 2>&1; then
+    echo "[CLOUD SYNC] Uploading ${target_dir} to AWS S3..."
+    aws s3 sync "${target_dir}" "s3://my-mlops-profile-archive/$(basename "${target_dir}")"
+  fi
+done
+
+echo "---------------------------------------------------------------------"
+echo "[COMPLETE] All historical trace archives processed and synchronized successfully."
+```
+
+---
+
+## 7. Summary & Operational Principles
 
 * **Adherence to Single Responsibility & Portability:** The core utility (`tb_log_reducer.py` / `run_with_check.sh`) strictly maintains a "lightweight, 0-dependency" design policy to operate reliably across any environment.
-* **Customization at Operator Discretion:** Feel free to modify and extend the concurrency lock-guards and pipeline integrations presented in this guide to fit your specific operational scale and environment.
+* **Customization at Operator Discretion:** Feel free to modify and extend the concurrency lock-guards, dynamic adaptors, and batch pipeline integrations presented in this guide to fit your specific operational scale and environment.
 * **User Liability Principle:** The implementation of custom pipelines and any data modifications or operational impacts resulting from interventions in active systems are strictly performed at the user's own risk.
