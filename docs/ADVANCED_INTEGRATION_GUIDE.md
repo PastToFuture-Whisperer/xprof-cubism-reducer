@@ -90,13 +90,14 @@ fi
 
 ---
 
-### 2.4 Active Process Inspection: Guarding Against Direct Writers (`fuser` / `lsof`)
+### 2.4 Active Process Inspection: Guarding Against Direct Writers (`fuser` / `lsof`)[Updated: 2026-08-19]
 
 A recipe that inspects the system at the kernel level prior to execution to safely skip processing if an unmanaged external process is actively writing to the log files, bypassing advisory lock rules.
 
 ```bash
-# 1. Check if any active process currently holds open handles on the target trace files
-if fuser ./active_logdir/*.trace.json.gz >/dev/null 2>&1; then
+# 1. Safely inspect active processes via array boundary guard (prevents wildcard expansion failure)
+TARGET_TRACES=(./active_logdir/*.trace.json.gz)
+if [ -e "${TARGET_TRACES[0]}" ] && fuser "${TARGET_TRACES[@]}" >/dev/null 2>&1; then
   echo "[WARN] Active writer process detected via fuser. Skipping execution to prevent corruption."
   exit 0
 fi
@@ -205,8 +206,9 @@ find "${ARCHIVE_ROOT}" -type f -name "*.trace.json.gz" -exec dirname {} \; | sor
   echo "---------------------------------------------------------------------"
   echo "[PROCESSING] Target directory: ${target_dir}"
   
-  # 2. Execute fail-safe reduction directly on target directory
-  python3 tb_log_reducer.py --logdir "${target_dir}" --resolution "${RESOLUTION}"
+  # 2. Execute fail-safe reduction using the safe verification wrapper (run_with_check.sh)[Updated: 2026-08-19]
+  # Note: Replaces direct 'python3 tb_log_reducer.py' calls to ensure 0-dep verification & auto-rollback protection
+  ./run_with_check.sh "${RESOLUTION}" dummy.py --logdir "${target_dir}"
   
   # 3. Optional: Sync reduced artifacts to Cloud Object Storage (GCS / S3)
   if command -v gcloud >/dev/null 2>&1; then
