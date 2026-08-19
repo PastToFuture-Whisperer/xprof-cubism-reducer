@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: MIT
 #
 # Safe Verification Execution Wrapper for TensorBoard Trace Log Reducer.
-# Version: 1.2.0
+# Version: 1.2.1 (Backward compatible with tb_log_reducer v1.2.0+)
 #
 # TECHNICAL ARCHITECTURE & FAIL-SAFE GUARANTEES:
 # 1. Process Isolation: Utilizes process-ID tagged temporary backups (.bak.$$)
@@ -21,6 +21,9 @@ set -e
 # =====================================================================
 BACKUP_KEYS=()
 PIPELINE_SUCCESSFUL=false
+# Pre-initialize TRACE_FILES array to ensure global exception safety
+# Prevents unbound variable reference in cleanup_and_rollback if killed prior to discovery
+TRACE_FILES=()
 
 cleanup_and_rollback() {
     # Skip cleanup if pipeline completed successfully and cleaned up normally
