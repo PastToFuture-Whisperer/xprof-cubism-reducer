@@ -1,12 +1,17 @@
-# XProf / TensorBoard Trace Log Reducer (v1.2.0)
+# XProf / TensorBoard Trace Log Reducer (v1.2.2)
 
 ![Python Version](https://img.shields.io/badge/Python-3.8%2B-blue.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Compatibility](https://img.shields.io/badge/TensorBoard-XProf%20Compatible-orange.svg)
 ![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-brightgreen.svg)
 [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Repository-yellow.svg)](https://huggingface.co/PastToFuture-Whisperer/xprof-cubism-reducer)
+[![Advanced Integration Guide](https://img.shields.io/badge/Guide-Advanced_Integration-9cf.svg)](docs/ADVANCED_INTEGRATION_GUIDE.md)
+
 > **The First Zero-Dependency In-Place Trace Reducer for TensorBoard / XProf**  
 > **Reactivating Dynamic MLOps Profiling Workflows by Bypassing Browser Rendering Bottlenecks**
+
+> :book: **Looking for Edge-Case Handling & Custom Integration?**  
+> Check out the **[Advanced Integration & Customization Guide (Actively Updated)](docs/ADVANCED_INTEGRATION_GUIDE.md)** for handling dense un-aggregatable workloads, unique event preservation, and custom MLOps pipelines.
 
 ---
 
@@ -54,6 +59,20 @@ To eliminate OOM risks and browser rendering lag, the reducer performs a two-sta
 
 2. **Dominant Color Overwrite (Spatial Downsampling):**
    Evaluates dense, noisy event grids (tier D) by spatial dominance. Micro-events are simplified into the dominant color block, stripping out sub-pixel noise without altering overall execution boundaries.
+
+---
+
+### Operational Boundary & Complementary Optimization Paradigm
+
+While spatial downsampling (mosaicing) and rectangular merging achieve **~80%–95% log footprint reductions** on standard trace streams, specific edge-case workloads exhibit structural limits:
+
+* **Dense & Un-aggregatable Unique Events (Fail-Safe Preservation):**  
+  If a trace log is densely populated by continuous, non-repeating unique events where structural smoothing would destroy critical execution fidelity, the internal **Dynamic Safety Snap & Verification Engine** automatically intervenes to preserve 100% of the raw trace data.
+* **Complementary Structural Optimization (Time vs. Space):**  
+  Time-domain downsampling (mosaicing) and space-domain consolidation (rectangular merging) operate in a mutually complementary relationship. When time-domain downsampling reaches its mathematical safety boundary, spatial merging and structural array optimization take over to maintain timeline rendering stability without data corruption.
+
+> :bulb: **Encountering Heavy Un-aggregatable Workloads?**  
+> For customized filtering strategies, unique event preservation recipes, and advanced architectural workarounds, refer directly to the **[Advanced Integration & Customization Guide (Actively Updated)](docs/ADVANCED_INTEGRATION_GUIDE.md)**.
 
 ---
 
@@ -109,16 +128,19 @@ If this tool has helped optimize your storage or training pipelines, sharing it 
 
 ---
 
-### Advanced Pipeline Integration & Customization
+### Advanced Pipeline Integration & Customization Guide (Actively Updated)
 
-If you need to deploy this utility in production pipelines or complex server environments, please refer to the [Advanced Integration Guide](docs/ADVANCED_INTEGRATION_GUIDE.md) for practical recipes addressing:
+This repository is maintained as an **actively updated, battle-tested knowledge base** providing production-grade integration recipes and operational workarounds for complex enterprise/cloud environments. 
 
-* **Multi-Process Concurrency & Lock-Guards:** Preventing read/write conflicts using `flock` or atomic `mkdir` locks.
-* **Network Shared Storage & Containers:** Safely handling NFS/SMB lock limitations and container permission boundaries.
-* **Live Inspection & Direct Writers:** Inspecting active kernel file handles via `fuser`/`lsof` before processing.
-* **Real-Time Monitoring & Streaming Workflows:** Oscilloscope-style real-time trace reduction via `rsync` staging.
+If you need to deploy this utility in production pipelines, automated CI/CD runs, or multi-tenant cluster environments, please refer to the **[Advanced Integration Guide](docs/ADVANCED_INTEGRATION_GUIDE.md)** for continuously updated technical patterns addressing:
 
-*Note: The recipes in the guide are provided as reference implementations. Any pipeline adaptations or custom integrations are implemented entirely at your own risk.*
+* **Handling Dense & Non-Mosaicable Workloads:** Advanced recipes for preserving non-aggregatable unique event streams without triggering browser rendering freezes.
+* **Multi-Process Concurrency & Lock-Guards:** Preventing read/write conflicts across parallel profiling processes using `flock` or atomic `mkdir` locks.
+* **Network Shared Storage & Containers:** Safely navigating NFS/SMB file lock limitations and container UID/GID permission boundaries.
+* **Live Inspection & Direct Writers:** Inspecting active kernel file handles via `fuser`/`lsof` before applying atomic byte replacements.
+* **Real-Time Monitoring & Streaming Workflows:** Oscilloscope-style real-time trace reduction using `rsync` staging buffers.
+
+*Note: The recipes in the guide represent field-tested reference implementations and are continuously refined as new MLOps/XProf edge cases emerge.*
 
 ---
 <a name="advanced-paradigm-restoring-dynamic-tensorboard-workflow"></a>
@@ -178,7 +200,7 @@ The lightweight optimization modules developed in this study, along with the emp
 
 #### 1. Optimization Utility Program Package
 
-* **[`tb_log_reducer_v1.2.0/`](./tb_log_reducer_v1.2.0/)** *(※ Browse full source code, sample scripts, and pipeline wrapper directly on GitHub)*
+* **[`tb_log_reducer_v1.2.2/`](./tb_log_reducer_v1.2.2/)** *(※ Browse full source code, sample scripts, and pipeline wrapper directly on GitHub)*
   - `tb_log_reducer.py`: Core XProf log spatial downsampling and footprint reduction module.
   - `run_with_check.sh`: **[Recommended]** Safe production wrapper featuring zero-dependency pre/post verification and instant auto-rollback protection.
   - `sample.py`: Mini-benchmark simulation script for testing and immediate verification.
