@@ -378,11 +378,6 @@ def main() -> None:
         print(f" ├─ Processed Event Count: {shrunk_size:,}")
         print(f" └─ Data Point Reduction Ratio: {reduction_ratio:.2f}%")
 
-        # Explicit Memory Cleanup (Anti-OOM Guard for Cloud Shell / Low Memory Containers)
-        del data
-        del orig_events
-        gc.collect()
-
         # =====================================================================
         # Protobuf Wire Type 2 (Length-delimited) Safe Masking Engine
         # Performs in-place ASCII string masking on raw .pb binaries without heavy
@@ -439,6 +434,12 @@ def main() -> None:
             except (IOError, OSError, Exception) as e:
                 # Catch physical file access errors or structural anomalies to shield main pipeline
                 print(f" ├─ [WARNING] Non-fatal PB masking bypass applied to {os.path.basename(pb_target)}: {e}")
+
+        # Explicit Memory Cleanup (Anti-OOM Guard for Cloud Shell / Low Memory Containers)
+        # Executed AFTER binary masking completes to allow access to original event metadata
+        del data
+        del orig_events
+        gc.collect()
 
         print(" ├─ [INFO] Grid uniformity verification: Optimal continuous pattern detected.")
         
