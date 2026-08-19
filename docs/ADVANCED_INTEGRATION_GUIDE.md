@@ -147,7 +147,7 @@ As noted in the primary documentation, processing efficiency and tile consolidat
 
 This wrapper pre-scans file metadata to dynamically scale down the target resolution for massive traces while maintaining higher fidelity for smaller profiles.
 
-### 5.2 Implementation Recipe: Density-Aware Wrapper (`adaptive_run.sh`)
+### 5.2 Implementation Recipe: Density-Aware Wrapper
 
 ```bash
 #!/usr/bin/env bash
@@ -188,7 +188,7 @@ A production-grade batch recipe designed to process multi-gigabyte historical tr
 ### 6.1 Concept & Pipeline Architecture
 When archiving historical profiling datasets or executing post-training hooks in CI/CD pipelines, transferring raw uncompressed traces severely wastes cloud bandwidth and storage capacity. This batch script recursively locates legacy trace directories, applies `run_with_check.sh` sequentially to guarantee zero corruption, uploads the shrunk artifacts, and frees up local disk space.
 
-### 6.2 Implementation Recipe: Recursive Archive & Cloud Upload (`batch_archive_sync.sh`)
+### 6.2 Implementation Recipe: Recursive Archive & Cloud Upload
 
 ```bash
 #!/usr/bin/env bash
