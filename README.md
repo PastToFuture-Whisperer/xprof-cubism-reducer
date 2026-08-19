@@ -159,6 +159,7 @@ Due to the exponential growth of trace log sizes, modern TensorBoard usage has b
 #### 3. Batch Log Archive Compression
 * **Concept:** Effortlessly post-process and shrink existing multi-gigabyte historical trace archives into compact representations for efficient long-term storage or team distribution.
 * **Implementation:** Run `tb_log_reducer.py` in batch mode over legacy log directories before pushing artifacts to cloud storage (e.g., S3 / GCS bucket archiving).
+> **Note:** For complete recursive batch processing scripts and GCS/S3 cloud upload pipeline examples, see **[Section 6: Batch Log Archive Compression & Cloud Pipeline Sync](docs/ADVANCED_INTEGRATION_GUIDE.md#6-batch-log-archive-compression--cloud-pipeline-sync-added-2026-08-19)** in the Advanced Integration Guide.
 
 > **Disclaimer:** While this utility operates with a fail-safe architecture, users converting existing log archives should maintain full backups prior to execution. The author assumes no liability for data modifications or operational losses resulting from the use or adaptation of this tool.
 
@@ -289,6 +290,8 @@ In the heavy trace environment I initially benchmarked, the secondary "Rectangul
 Thus, these two stages are not merely primary and secondary; my current observations indicate they exist in a "mutually complementary" relationship, adapting dynamically to diverse trace log structures. Bringing an idea to life and letting it converse with different datasets reveals unexpected depth—this is precisely what makes programming so fascinating. ¯\\\_(ツ)_/¯
 
 For this reason, I chose not to remove "Spatial Downsampling"—despite its inherent risk of altering granularity—leaving it fully configurable within the pipeline. Feel free to adjust the parameters and experiment.
+
+> **Note:** For actionable code recipes that dynamically calculate optimal resolution based on trace event density and payload size, see **[Section 5: Dynamic Resolution Adaptation Recipe](docs/ADVANCED_INTEGRATION_GUIDE.md#5-dynamic-resolution-adaptation-recipe-added-2026-08-19)** in the Advanced Integration Guide.
 
 By retaining this process, I realized a concept extending far beyond mere data reduction: a "major byproduct" along an entirely different vector. I shall return to this point shortly.
 
