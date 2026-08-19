@@ -2,13 +2,13 @@
 # Copyright (c) 2026 PastToFuture-Whisperer
 # SPDX-License-Identifier: MIT
 #
-# Version: 1.2.1 (Non-breaking patch update; maintains full backward compatibility with v1.2.0)
+# Version: 1.2.2 (Patch update: Fixes Protobuf Varint LE decoding and binary string key matching)
 #
 # This program is a byproduct of the advanced profile optimization research 
 # mentioned in the documentation; those core features are explicitly excluded 
 # from this repository and implemented separately.
 
-__version__ = "1.2.1"
+__version__ = "1.2.2"
 
 import argparse
 import os
@@ -77,6 +77,42 @@ class ReducerConfig:
     LARGE_TRACE_THRESHOLD_MB: float = 100.0# File size threshold (MB) for emitting heavy memory load warning
     SIMULATION_SCALE_FACTOR: float = 10.0  # Scale factor for boundary simulation calculation
 
+def verify_protobuf_wire2_boundary(modified_bytes: bytearray, idx: int, target_len: int) -> bool:
+    """
+    Validates Protobuf Wire Type 2 (Length-delimited) boundary backwards with correct 
+    Little-Endian Varint decoding for multi-byte lengths (>= 128 bytes).
+    """
+    # 1. Inspect Length Varint (1 to 5 bytes)
+    for len_bytes in range(1, 6):
+        len_start = idx - len_bytes
+        if len_start < 1:
+            break
+        # Last byte of Varint (idx-1) must have MSB == 0, preceding bytes must have MSB == 1
+        if (modified_bytes[idx - 1] & 0x80) != 0:
+            continue
+        if any((modified_bytes[i] & 0x80) == 0 for i in range(len_start, idx - 1)):
+            continue
+            
+        # Reconstruct length value in correct Little-Endian order
+        length_val = 0
+        for shift_idx, i in enumerate(range(len_start, idx)):
+            length_val |= (modified_bytes[i] & 0x7F) << (shift_idx * 7)
+            
+        if length_val == target_len:
+            # 2. Inspect Tag Varint (1 to 5 bytes)
+            for tag_bytes in range(1, 6):
+                tag_start = len_start - tag_bytes
+                if tag_start < 0:
+                    break
+                if (modified_bytes[len_start - 1] & 0x80) != 0:
+                    continue
+                if any((modified_bytes[i] & 0x80) == 0 for i in range(tag_start, len_start - 1)):
+                    continue
+                
+                # Check if bottom 3 bits of the Tag field indicate Wire Type 2 (0x02)
+                if (modified_bytes[tag_start] & 0x07) == 2:
+                    return True
+    return False
 
 def merge_events_to_mosaic(
     raw_events: List[Dict[str, Any]], 
@@ -355,19 +391,19 @@ def main() -> None:
         # =====================================================================
         dir_path = os.path.dirname(trace_path)
         pb_files = glob.glob(os.path.join(dir_path, "*.pb"))
-        distinct_names = set(ev["name"] for ev in shrunk_events if isinstance(ev, dict) and "name" in ev)
+        
+        # FIX: Extract original raw names prior to mosaic truncation to ensure byte-length key matching
+        distinct_raw_names = set(ev["name"] for ev in orig_events if isinstance(ev, dict) and "name" in ev)
 
         # Sort target names in DESCENDING ORDER of length to prevent substring aliasing
-        sorted_distinct_names = sorted(distinct_names, key=len, reverse=True)
+        sorted_distinct_names = sorted(distinct_raw_names, key=len, reverse=True)
 
         for pb_target in pb_files:
             try:
                 with open(pb_target, "rb") as f:
                     modified_bytes = bytearray(f.read())
 
-                for name_str in sorted_distinct_names:
-                    base_name = name_str.rstrip("*")
-                    
+                for base_name in sorted_distinct_names:
                     # ENHANCED GUARD: Enforce minimum string length boundary (>= 5 bytes) 
                     # to prevent collisions on high-frequency short tokens (e.g., 'Add', 'x')
                     if not base_name or len(base_name) < 5 or not re.match(r'^[A-Za-z0-9_/\-:.\(\)@]+$', base_name):
@@ -384,42 +420,8 @@ def main() -> None:
                         if idx == -1:
                             break
                         
-                        # Validate Protobuf Tag and Wire Type (Tag == 2 / Length-delimited)
-                        # Backtrack from target position to inspect preceding Tag Varint and Length Varint
-                        is_valid_protobuf_string = False
-                        
-                        # Inspect candidate Varint header spanning 2 to 10 bytes immediately before target
-                        for header_offset in range(2, 11):
-                            if idx - header_offset < 0:
-                                continue
-                            
-                            # Extract preceding byte header slice
-                            header_bytes = modified_bytes[idx - header_offset : idx]
-                            
-                            # Parse trailing Varint representing string length
-                            length_val = 0
-                            shift = 0
-                            len_bytes_read = 0
-                            for b in reversed(header_bytes):
-                                length_val |= (b & 0x7F) << shift
-                                len_bytes_read += 1
-                                if not (b & 0x80):  # MSB is 0 -> End of Varint
-                                    break
-                                shift += 7
-                            
-                            # Check if decoded string length matches exact target byte length
-                            if length_val == target_len and len_bytes_read < len(header_bytes):
-                                # Inspect Field Tag byte immediately preceding the length Varint
-                                tag_byte = header_bytes[-len_bytes_read - 1]
-                                wire_type = tag_byte & 0x07
-                                
-                                # Wire Type 2 indicates Length-delimited Payload (String/Bytes)
-                                if wire_type == 2:
-                                    is_valid_protobuf_string = True
-                                    break
-
-                        # Execute in-place byte replacement only upon passing Wire Type 2 verification
-                        if is_valid_protobuf_string:
+                        # Validate Protobuf Tag and Wire Type using Little-Endian Varint decoder
+                        if verify_protobuf_wire2_boundary(modified_bytes, idx, target_len):
                             modified_bytes[idx : idx + target_len] = replacement
                             idx += target_len
                         else:
