@@ -11,7 +11,7 @@
 > **Reactivating Dynamic MLOps Profiling Workflows by Bypassing Browser Rendering Bottlenecks**
 
 > :book: **Looking for Edge-Case Handling & Custom Integration?**  
-> Check out the **[Advanced Integration & Customization Guide (Actively Updated)](docs/ADVANCED_INTEGRATION_GUIDE.md)** for handling dense un-aggregatable workloads, unique event preservation, and custom MLOps pipelines.
+> Check out the **[Advanced Integration & Customization Guide (Actively Updated: 2026-08-19)](docs/ADVANCED_INTEGRATION_GUIDE.md)** for handling dense un-aggregatable workloads, unique event preservation, and custom MLOps pipelines.
 
 ---
 
