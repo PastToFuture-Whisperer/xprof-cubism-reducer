@@ -385,12 +385,9 @@ In line with my research roadmap, preliminary intellectual property procedures a
 
 ## Contact & Inquiries
 
-To maintain operational security and prevent automated spam, direct personal contact details are not disclosed here.
+For technical inquiries, collaboration proposals, or private discussions, please feel free to reach out via the LinkedIn contact link on my profile page:
 
-For formal technical inquiries, collaboration proposals, or private discussions:
-Please leave a brief note with your **LinkedIn profile (or corporate/academic affiliation)** in the [Community](../../discussions) tab. 
-
-Once verified, I will reach out to you directly via LinkedIn.
+ **[PastToFuture-Whisperer Profile](https://github.com/pasttofuture-whisperer)**
 
 ---
 
