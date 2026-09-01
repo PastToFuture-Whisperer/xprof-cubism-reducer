@@ -307,81 +307,28 @@ From here, how profile data should be seamlessly and elegantly "abstracted into 
 - **Enterprise Compliance:** The open-source scripts (`tb_log_reducer.py` / `run_with_check.sh`) have zero third-party library dependencies (0 dependencies), operating entirely within standard Python and Bash environments. Consequently, they instantly pass corporate supply-chain security, legal, and licensing audits for safe enterprise deployment.
 - **Proprietary Core IP Notice:** Note that all code within this repository is 100% open-source under the MIT License. Advanced concepts discussed in Section 3 ("Deterministic TPU Latency Upper-Bound Guarding and Waveform Alignment") represent separate proprietary Intellectual Property (IP) and are strictly excluded from this repository.
 
-## 3. Advanced Application: TPU Latency Variance Control & Profile Smoothing
-### 【Postscript: My True Research — Cloud TPU Jitter Mitigation】
+---
+<a name="advanced-application"></a>
+## 3. Advanced Application: TPU/GPU Latency Variance Control (`xprof-jitter-interceptor`)
 
-In my primary research, I have successfully developed **"Deterministic Upper-Bound Guarding and Waveform Alignment for TPU Execution Latency"**—a technology that bounds and smooths latency variance in TPU execution down to a stable, uniform window within the program pipeline.
-
-#### Theoretical Backbone: Discrete Difference Bounding & Waveform Alignment
-
-```text
-  [ Raw Execution Phase ]        [ Discrete Difference Interceptor ]       [ Controlled Waveform ]
-  High-Frequency Jitter   ===>   Bounded via Babbage Engine Model  ===>   Uniform Execution Window
-  (Spikes / Non-Determinism)     (Relative Dynamic Ceiling)               (Bounded Variance σ)
-```
-
-In asynchronous parallel execution and high-performance computing (HPC) environments—such as multi-GPU/TPU clusters—non-deterministic execution profiling jitter frequently corrupts measurement fidelity and undermines performance reproducibility. Transient hardware initialization stalls, memory bus contention, and runtime dynamic scheduling induce unpredictable latency spikes, masking genuine execution bottlenecks within noisy trace profiles.
-
-To address this challenge at the fundamental layer, we introduce a novel runtime interception control paradigm inspired by Charles Babbage’s classical *Difference Engine*. By modeling temporal execution variations through discrete order differences, the system dynamically establishes a mathematical relative upper-bound ceiling. When transient execution energy exceeds this boundary, the interceptor smoothly absorbs and redistributes excess temporal momentum across sequential compute steps via discrete feedback loops, dynamically bound through JAX/XLA tensor pad operations.
-
-This theoretical framework proves that non-deterministic, high-frequency execution jitter can be deterministically bounded and aligned into a uniform execution window—transforming chaotic runtime waveforms into predictable, mathematically bounded profiles without sacrificing net algorithmic throughput. Below are the corresponding empirical profile figures and benchmark data.
-
-#### Benchmark Evidence & Verification Log Data
-
-| Execution Mode / Parameter | Max Latency Spike | Latency Variance (Std Dev $\sigma$) | Average Throughput | Log Visibility & Download |
-| :--- | :--- | :--- | :--- | :--- |
-| **1. Control OFF (Raw Jitter)** | **221.4 ms** | **25.6 ms** | **50.0 ms** | Unbounded initialization & random spikes<br>[`log_raw_100.zip`](examples/log_raw_100.zip) |
-| **2. Control ON (Resolution 100%)** | **123.3 ms** *(~44.3% reduction)* | **17.2 ms** *(~32.8% convergence)* | **48.6 ms** | Dynamic ceiling caps max latency instantly<br>[`log_controlled_100.zip`](examples/log_controlled_100.zip) |
-| **3. Control ON + Downsampled (Resolution 10%)** | **128.8 ms** *(Boundary preserved)* | **16.9 ms** *(Enhanced noise smoothing)* | **50.5 ms** | **90%+ footprint reduction** preserved<br>[`log_controlled_ds10.zip`](examples/log_controlled_ds10.zip) |
+> ** Project Evolution & Core Repository Relocation Notice (Updated September 2026)**
+>
+> The advanced deterministic jitter suppression core, temporal micro-timer interception model, and empirical JAX/XLA benchmark suite—previously discussed in this section as "TPU Latency Variance Control"—have been officially elevated and transitioned into a dedicated, specialized repository:
+>
+>  **[xprof-jitter-interceptor: Deterministic Jitter Suppression for JAX/XLA Pipelines](https://github.com/pasttofuture-whisperer/xprof-jitter-interceptor)**
+>
+> ### What's New in the Dedicated Repository (`v1.1.0`):
+> * **Theoretical Architecture:** Mathematical formulation of Discrete Difference Bounding and 2D Spatiotemporal Memory Alignment.
+> * **Empirical Proof & Logs:** Full execution logs and raw profile datasets demonstrating a **~44.3% reduction in max latency spikes** and **~32.8% variance convergence ($\sigma$)**.
+> * **PoC Playground Access:** Detailed technical documentation and executable PoC sandbox environment guidelines.
+>
+> *For in-depth theoretical discussions, academic preprints (arXiv), and full benchmark evidence, please visit the new **[xprof-jitter-interceptor](https://github.com/PastToFuture-Whisperer/xprof-jitter-interceptor)** repository.*
 
 ---
 
-### Visual Evidence (TensorBoard Profile & Waveform Alignment)
+### Research Roadmap & Intellectual Property Notice
 
-| Control OFF (Raw Trace) | Control ON (Resolution 100%) | Control ON (Resolution 10%) |
-| :---: | :---: | :---: |
-| ![OFF](assets/fig02_tb_profile_raw.png) | ![ON 100%](assets/fig03_tb_profile_controlled_100.png) | ![ON 10%](assets/fig04_tb_profile_controlled_ds10.png) |
-
-> **Figure 1: Real TensorBoard Profile Execution Screenshots.**
-> - **Left (OFF):** Unbounded initialization spikes reach 221.4 ms with wide jitter dispersion ($\sigma=25.6\text{ ms}$).
-> - **Center (ON/100%):** Dynamic upper-bound guard instantly clamps maximum spike to 123.3 ms, compressing variance to $\sigma=17.2\text{ ms}$.
-> - **Right (ON/10%):** Achieves 90%+ log footprint reduction while preserving and smoothly visualizing the upper-bound waveform and variance ($\sigma=16.9\text{ ms}$).
-
----
-
-Let us return to the "major byproduct" of spatial downsampling mentioned earlier.
-
-What initially appeared to be a minor pre-processor for reducing rendering overhead revealed something far more profound upon continued observation: a breakthrough in presenting the overarching structure and latency profile of target logs as a "spatial representation easily digestible by AI" during AI-assisted coding.
-
-By stripping away high-frequency noise, transient processing delays (spikes) are no longer concealed; instead, they emerge vividly for the AI as an "informationally" visible, beautifully continuous waveform—
-
-This realization of "visualizing waveforms at the informational layer" dramatically elevates data recognition during LLM interactions. It served as the primary logical bridge in refining my core research: "Deterministic Upper-Bound Guarding and Waveform Alignment for TPU Execution Latency".
-
-Regarding the core technology—"Deterministic Upper-Bound Guarding and Waveform Alignment for TPU Execution Latency"—code is withheld at this time in anticipation of future corporate collaboration, technology transfer, or licensing, limiting this presentation to technical concepts and empirical proof.
-
-In truth, the direct catalyst for creating this log reduction module (`tb_log_reducer.py`) was a pressing infrastructure bottleneck: trace logs from my primary TPU latency control experiments grew so immense that TensorBoard consistently froze.
-
-While the core technology remains black-boxed (to protect intellectual property and rights), I recognized that this auxiliary utility born during research represents a universally valuable tool for engineers facing identical bottlenecks, prompting its release as open source.
-
-For engineers and researchers interested in deeper technical discussions, feedback, or potential multi-cloud/compiler-layer (XLA) applications regarding the concepts and empirical findings (What) of "TPU Latency Variance Control", I welcome private inquiries.
-
-This project is built upon a design philosophy that prioritizes a lightweight, minimal, and focused codebase—aiming to maintain a clean structure of a few hundred lines. While we respectfully strive to keep the core utility simple rather than expanding it into a complex feature set, we genuinely value community insights and constructive technical feedback. Discussions within this repository are focused on refining and supporting our core open-sourced tool: the "Lightweight Utility (Spatial Downsampling & Grid Aggregation)".
-
-My goal is to advance this technology further, ultimately establishing a comprehensive paradigm for fully suppressing and smoothing TPU execution latency and runtime waveforms.
-
-To validate the foundational code intended to leverage this technology, I submitted a project proposal titled *"JAX-XLA-Deterministic-Execution-Profile-Optimizer"* to the Google TPU Research Cloud (TRC) several days ago. Additionally, I have reached out to a curated group of Google engineers specializing in TPU and XLA to introduce this project.
-
-While I am eager to conduct final validation on physical Cloud TPU hardware, this technology possesses a powerful impact capable of deterministically altering accelerator execution behavior and waveforms. Precisely because of this, I refuse to conduct unmanaged, rogue experiments that risk imposing unexpected loads on infrastructure. A developer's integrity demands adhering to strict Operational Safety Boundaries, conducting responsible validation within officially recognized frameworks (TRC) and secure sandbox environments.
-
-However, as we enter the summer holiday season, immediate responses are naturally unexpected—a coincidental alignment driven by the pacing of my own development timeline.
-
-Should they catch sight of this message poolside during their vacation and conversations pick up towards autumn, I would be delighted (though earlier correspondence is, of course, always welcome).
-
-Truth be told, validating this technology—counting from initial data gathering for the TRC application—required an extraordinarily long time to reach this point of announcement.
-
-Thus, after allowing ample time for review, validation, and dialogue, should the outcome not align with my hopes, I plan to move forward this autumn with the next phases, including further expansion and adapting this technology to alternative environments.
-
-In line with my research roadmap, preliminary intellectual property procedures are currently underway. To ensure these insights contribute meaningfully to the next generation of AI infrastructure, I plan to proceed with Phase 2 this autumn—expanding this framework to alternative hardware architectures and multi-cloud environments.
+Preliminary intellectual property procedures regarding the core deterministic control framework are currently underway. Phase 2 of this research roadmap—expanding the spatial alignment architecture to multi-cloud execution environments and alternative hardware topologies—is scheduled to initiate in Autumn 2026.
 
 ## Contact & Inquiries
 
@@ -389,7 +336,7 @@ For technical inquiries, collaboration proposals, or private discussions, please
 
  **[PastToFuture-Whisperer Profile](https://github.com/pasttofuture-whisperer)**
 
----
+ ---
 
 ## 4. Closing Remarks (The Last Stand)
 
