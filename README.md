@@ -16,7 +16,7 @@ It creates a lightweight, intentionally lossy overview of dense profiling traces
 * **It does not replace TensorBoard. It makes oversized TensorBoard / XProf traces easier to live with.**
 
 > :book: **Looking for Extended Integration & Custom Recipes?**  
-> Check out the **[Advanced Integration Guide (Actively Updated: 2026-08-19)](docs/ADVANCED_INTEGRATION_GUIDE.md)** for optional examples of concurrency locking, staging snapshots, shared storage handling, and pipeline recipes.
+> Check out the **[Advanced Integration Guide (Actively Updated: 2026-10-06)](docs/ADVANCED_INTEGRATION_GUIDE.md)** for optional examples of concurrency locking, staging snapshots, shared storage handling, and pipeline recipes.
 
 ---
 
@@ -177,4 +177,25 @@ This repository emerged as a supporting utility during profiling research around
 
 The reducer remains intentionally narrow in scope. It is not a replacement for raw profiling data, a live debugger, or an automated anomaly detector. Its purpose is to make oversized traces easier to inspect as lightweight visualization artifacts.
 
-The project also explores a broader operational idea: profiling does not always need to begin with the highest-resolution artifact. A lightweight
+The project also explores a broader operational idea: profiling does not always need to begin with the highest-resolution artifact. A lightweight overview may serve as the first inspection layer, with raw traces reserved for regions requiring deeper analysis. Whether this workflow reduces profiling friction, infrastructure overhead, or engineering time at scale remains an open question that real-world deployment can help evaluate.
+
+Low-level systems research continues through projects such as `xprof-jitter-interceptor`, while broader AI control architectures are explored via `perceptual-chain`.
+
+---
+
+### Support & Sponsorship
+
+If you find `xprof-cubism-reducer` (or `perceptual-chain`) useful in your workflow, consider supporting ongoing development and research through Ko-fi:
+
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-ff5f5f?style=flat&logo=ko-fi)](https://ko-fi.com/pasttofuture_whisperer)
+
+Your contributions support continuous benchmark testing, open-source maintenance, and theoretical research in AI control architecture.
+
+---
+
+### License & Compliance
+
+* **License:** Original software implementation published under the [MIT License](LICENSE).
+* **Zero Dependencies:** Operates using standard Python 3.8+ libraries and Bash, minimizing third-party dependency and supply-chain review requirements.
+
+> **Don't be evil, ¯\\\_(ツ  )\_/¯ but ¯\\\_(  ツ)\_/¯ don't be serious...!**
