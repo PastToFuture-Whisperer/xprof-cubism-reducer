@@ -61,18 +61,18 @@ Raw / high-resolution trace inspection for detailed analysis
 Zero third-party dependencies required—runs out of the box using pure standard Python 3.8+ and Bash:
 
 #### Option A: Standalone Execution (Direct Python)
-Process target log directories directly with Python standard libraries using [**`tb_log_reducer.py`**](tb_log_reducer.py):
+Process target log directories directly with Python standard libraries using [`tb_log_reducer.py`](tb_log_reducer_v1.2.3/tb_log_reducer.py):
 
 ```bash
-python3 tb_log_reducer.py --logdir ./tb_logs --resolution 50.0
+python3 tb_log_reducer_v1.2.3/tb_log_reducer.py --logdir ./tb_logs --resolution 50.0
 ```
 
 #### Option B: Pipeline-Integrated Execution via Wrapper
-Run target benchmarking or training scripts through [**`run_with_check.sh`**](run_with_check.sh) for safe post-processing and automatic rollback protection:
+Run target benchmarking or training scripts through [`run_with_check.sh`](tb_log_reducer_v1.2.3/run_with_check.sh) for safe post-processing and automatic rollback protection:
 
 ```bash
-# Usage: bash run_with_check.sh [Resolution %] [Target Script] [Arguments...]
-bash run_with_check.sh 10 sample.py --logdir ./tb_logs
+# Usage: bash tb_log_reducer_v1.2.3/run_with_check.sh [Resolution %] [Target Script] [Arguments...]
+bash tb_log_reducer_v1.2.3/run_with_check.sh 10 tb_log_reducer_v1.2.3/sample.py --logdir ./tb_logs
 ```
 
 ---
@@ -80,7 +80,7 @@ bash run_with_check.sh 10 sample.py --logdir ./tb_logs
 <a name="chapter-1"></a>
 ## 1. Technical Specifications & Structural Boundaries
 
-The core module [**`tb_log_reducer.py`**](tb_log_reducer.py) restructures dense event arrays in TensorBoard trace logs (XProf format) using an algorithm designed for approximately linear time behavior under typical trace workloads.
+The core module [`tb_log_reducer.py`](tb_log_reducer_v1.2.3/tb_log_reducer.py) restructures dense event arrays in TensorBoard trace logs (XProf format) using an algorithm designed for approximately linear time behavior under typical trace workloads.
 
 ### Core Processing Mechanisms
 
@@ -94,7 +94,7 @@ The core module [**`tb_log_reducer.py`**](tb_log_reducer.py) restructures dense 
 
 ### Failure Handling & Structural Safety Boundaries
 
-* **Process-Isolated Backups:** **[`run_with_check.sh`](run_with_check.sh)** creates `.bak.$$` backups tied to the process PID prior to processing, avoiding backup pollution during multi-trace sequential runs.
+* **Process-Isolated Backups:** [`run_with_check.sh`](tb_log_reducer_v1.2.3/run_with_check.sh) creates `.bak.$$` backups tied to the process PID prior to processing, avoiding backup pollution during multi-trace sequential runs.
 * **Structural Integrity Checks:** Performs post-processing checks verifying gzip readability, JSON parseability, and root data type compatibility using standard libraries.
 * **Handled Rollback:** Automatically triggers best-effort rollback from backups if processing fails or structural corruption is detected.
 * **Operational Scope Limits:** The wrapper handles expected execution failure paths and signal traps (`SIGINT`, `SIGTERM`). Uncatchable process terminations (`SIGKILL / kill -9`), physical filesystem failures, or power loss are outside its operational guarantees.
@@ -177,26 +177,4 @@ This repository emerged as a supporting utility during profiling research around
 
 The reducer remains intentionally narrow in scope. It is not a replacement for raw profiling data, a live debugger, or an automated anomaly detector. Its purpose is to make oversized traces easier to inspect as lightweight visualization artifacts.
 
-The project also explores a broader operational idea: profiling does not always need to begin with the highest-resolution artifact. A lightweight overview may serve as the first inspection layer, with raw traces reserved for regions requiring deeper analysis. Whether this workflow reduces profiling friction, infrastructure overhead, or engineering time at scale remains an open question that real-world deployment can help evaluate.
-
-Low-level systems research continues through projects such as `xprof-jitter-interceptor`, while broader AI control architectures are explored via `perceptual-chain`.
-
----
-
-### Support & Sponsorship
-
-If you find `xprof-cubism-reducer` (or `perceptual-chain`) useful in your workflow, consider supporting ongoing development and research through Ko-fi:
-
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-ff5f5f?style=flat&logo=ko-fi)](https://ko-fi.com/pasttofuture_whisperer)
-
-Your contributions support continuous benchmark testing, open-source maintenance, and theoretical research in AI control architecture.
-
----
-
-### License & Enterprise Compliance
-
-* **License:** Original software implementation published under the [MIT License](LICENSE).
-* **Zero Dependencies:** Operates strictly using standard Python 3.8+ libraries and standard Bash environments, passing standard corporate supply-chain and legal audits.
-* **Proprietary IP Distinction:** Core jitter control, micro-timer interception models, and hardware-level variance suppression architectures discussed in related research belong to separate IP repositories (`xprof-jitter-interceptor`) and are explicitly excluded from this repository.
-
-> **Don't be evil, ¯\\\_(ツ  )\_/¯ but ¯\\\_(  ツ)\_/¯ don't be serious...!**
+The project also explores a broader operational idea: profiling does not always need to begin with the highest-resolution artifact. A lightweight
