@@ -61,14 +61,14 @@ Raw / high-resolution trace inspection for detailed analysis
 Zero third-party dependencies required—runs out of the box using pure standard Python 3.8+ and Bash:
 
 #### Option A: Standalone Execution (Direct Python)
-Process target log directories directly with Python standard libraries using **[`tb_log_reducer.py`](tb_log_reducer.py)**:
+Process target log directories directly with Python standard libraries using [**`tb_log_reducer.py`**](tb_log_reducer.py):
 
 ```bash
 python3 tb_log_reducer.py --logdir ./tb_logs --resolution 50.0
 ```
 
 #### Option B: Pipeline-Integrated Execution via Wrapper
-Run target benchmarking or training scripts through **[`run_with_check.sh`](run_with_check.sh)** for safe post-processing and automatic rollback protection:
+Run target benchmarking or training scripts through [**`run_with_check.sh`**](run_with_check.sh) for safe post-processing and automatic rollback protection:
 
 ```bash
 # Usage: bash run_with_check.sh [Resolution %] [Target Script] [Arguments...]
@@ -80,7 +80,7 @@ bash run_with_check.sh 10 sample.py --logdir ./tb_logs
 <a name="chapter-1"></a>
 ## 1. Technical Specifications & Structural Boundaries
 
-The core module **[`tb_log_reducer.py`](tb_log_reducer.py)** restructures dense event arrays in TensorBoard trace logs (XProf format) using an algorithm designed for approximately linear time behavior under typical trace workloads.
+The core module [**`tb_log_reducer.py`**](tb_log_reducer.py) restructures dense event arrays in TensorBoard trace logs (XProf format) using an algorithm designed for approximately linear time behavior under typical trace workloads.
 
 ### Core Processing Mechanisms
 
