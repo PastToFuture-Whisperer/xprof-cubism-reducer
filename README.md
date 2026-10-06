@@ -159,7 +159,7 @@ If you have findings or edge cases to share, please consider opening an Issue or
 
 ### Advanced Integration Guide
 
-For extended operational recipes and integration examples, please refer to the **[Advanced Integration Guide (Actively Updated: 2026-08-19)](docs/ADVANCED_INTEGRATION_GUIDE.md)**:
+For extended operational recipes and integration examples, please refer to the **[Advanced Integration Guide (Actively Updated: 2026-10-06)](docs/ADVANCED_INTEGRATION_GUIDE.md)**:
 
 * **Concurrency Lock-Guards:** Multi-user directory locking via `flock` or POSIX atomic `mkdir`.
 * **Active Process Guards:** Kernel handle inspection via `fuser` / `lsof` to avoid processing active writer directories.
