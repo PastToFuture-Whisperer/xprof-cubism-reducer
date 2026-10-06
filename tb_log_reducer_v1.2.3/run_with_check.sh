@@ -3,21 +3,23 @@
 # SPDX-License-Identifier: MIT
 #
 # Safe Verification Execution Wrapper for TensorBoard Trace Log Reducer.
-# Version: 1.2.2 (Backward compatible with tb_log_reducer v1.2.0+)
+# Version: 1.2.3 (Backward compatible with tb_log_reducer v1.2.0+)
 #
-# TECHNICAL ARCHITECTURE & FAIL-SAFE GUARANTEES:
+# FAILURE HANDLING & ROLLBACK ARCHITECTURE:
 # 1. Process Isolation: Utilizes process-ID tagged temporary backups (.bak.$$)
 #    to prevent overwriting existing backups from previous interrupted runs.
-# 2. Signal Trapping: Intercepts SIGINT/SIGTERM/EXIT signals to guarantee 
-#    automatic emergency cleanup or instant rollback upon any unexpected termination.
-# 3. Cross-Platform POSIX Standard: Fully compatible with BSD/GNU find (macOS, 
-#    Alpine/BusyBox Linux, Ubuntu/Debian, Conda, Cloud Shell).
+# 2. Multi-Trace Backup Preservation: Enforces strict single-backup creation 
+#    per execution process to prevent modifying active backups during sequential trace runs.
+# 3. Signal Trapping: Intercepts SIGINT/SIGTERM/EXIT signals to provide
+#    best-effort automatic rollback upon handled execution interruption.
+# 4. Environment Compatibility: Bash-based execution wrapper with BSD/GNU find
+#    compatibility (macOS, Linux, Conda, Cloud Shell).
 
 set -e
 
 # =====================================================================
 # Signal Trap & Emergency Rollback Engine
-# Ensures zero dangling temporary files or corrupted states even if killed
+# Provides best-effort automatic rollback upon process interruption
 # =====================================================================
 BACKUP_KEYS=()
 PIPELINE_SUCCESSFUL=false
@@ -34,7 +36,7 @@ cleanup_and_rollback() {
     echo ""
     echo "====================================================================="
     echo " [EMERGENCY TRAP] Process interrupted or unexpected exit detected!"
-    echo " └─ Initiating fail-safe rollback and cleaning up temporary files..."
+    echo " └─ Initiating rollback from temporary backups..."
     echo "====================================================================="
 
     for trace_file in "${TRACE_FILES[@]}"; do
@@ -52,7 +54,7 @@ cleanup_and_rollback() {
         done < <(find "${dir_path}" -maxdepth 1 -type f -name "*.pb.bak.${PID_SUFFIX}" -print0 2>/dev/null)
     done
 
-    echo " [ROLLBACK COMPLETE] All original raw trace files restored safely."
+    echo " [ROLLBACK COMPLETE] Restored original raw trace files where backups were present."
     exit 130
 }
 
@@ -67,7 +69,7 @@ RESOLVED_SELF="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || ec
 SCRIPT_DIR="$(cd "$(dirname "${RESOLVED_SELF}")" && pwd)"
 
 # =====================================================================
-# Dynamic Interpreter Discovery (POSIX Standard command -v)
+# Dynamic Interpreter Discovery (command -v)
 # =====================================================================
 PYTHON_BIN=$(command -v python3 || command -v python || true)
 if [ -z "${PYTHON_BIN}" ]; then
@@ -136,7 +138,7 @@ echo "====================================================================="
 "$PYTHON_BIN" "${TARGET_SCRIPT}" "${SCRIPT_ARGS[@]}"
 
 echo "====================================================================="
-echo " [PHASE 2] Safe Post-Processing & Verification Pipeline (v1.2.1)"
+echo " [PHASE 2] Post-Processing & Verification Pipeline (v1.2.3)"
 echo " ├─ Log Dir   : ${LOGDIR}"
 echo " └─ Resolution: ${RESOLUTION}%"
 echo "====================================================================="
@@ -144,13 +146,12 @@ echo "====================================================================="
 REDUCER_SCRIPT="${SCRIPT_DIR}/tb_log_reducer.py"
 
 if [ ! -f "${REDUCER_SCRIPT}" ]; then
-  echo " [WARNING] Reducer script not found at ${REDUCER_SCRIPT}. Skipping reduction phase."
-  PIPELINE_SUCCESSFUL=true
-  exit 0
+  echo " [ERROR] Reducer script not found at ${REDUCER_SCRIPT}. Aborting pipeline."
+  exit 1
 fi
 
 # ---------------------------------------------------------------------
-# Cross-Platform Safe Array Allocation (BSD / GNU find compliant)
+# Array Allocation Guard (BSD / GNU find compliant)
 # ---------------------------------------------------------------------
 TRACE_FILES=()
 # Enforce strict Bash 4.4+ version guard for readarray -d support
@@ -174,13 +175,19 @@ fi
 echo " [1/4] Creating temporary process-isolated backups (.bak.${PID_SUFFIX})..."
 for trace_file in "${TRACE_FILES[@]}"; do
   [ -f "${trace_file}" ] || continue
-  cp "${trace_file}" "${trace_file}.bak.${PID_SUFFIX}"
+  # Ensure single backup creation per trace execution to avoid overwriting original
+  if [ ! -f "${trace_file}.bak.${PID_SUFFIX}" ]; then
+    cp "${trace_file}" "${trace_file}.bak.${PID_SUFFIX}"
+  fi
   
   dir_path="$(dirname "${trace_file}")"
   # BSD/GNU find compliant with explicit maxdepth placement
+  # Only copy raw .pb files if an isolated backup for this PID does NOT already exist
   while IFS= read -r -d '' pb_file; do
-    [ -f "${pb_file}" ] && cp "${pb_file}" "${pb_file}.bak.${PID_SUFFIX}"
-  done < <(find "${dir_path}" -maxdepth 1 -type f -name "*.pb" -print0 2>/dev/null)
+    if [ -f "${pb_file}" ] && [ ! -f "${pb_file}.bak.${PID_SUFFIX}" ]; then
+      cp "${pb_file}" "${pb_file}.bak.${PID_SUFFIX}"
+    fi
+  done < <(find "${dir_path}" -maxdepth 1 -type f -name "*.pb.bak.${PID_SUFFIX}" -print0 2>/dev/null)
 done
 
 # ---------------------------------------------------------------------
@@ -194,6 +201,7 @@ fi
 
 # ---------------------------------------------------------------------
 # Step 3: Zero-Dependency Structural Integrity Check (Python Standard Lib)
+# Checks gzip readability, JSON parseability, and root data type
 # ---------------------------------------------------------------------
 echo " [3/4] Running 0-dep structural integrity verification..."
 VERIFICATION_PASSED=true
@@ -222,10 +230,10 @@ else
 fi
 
 # ---------------------------------------------------------------------
-# Step 4: Finalize or Instant Rollback
+# Step 4: Finalize or Rollback
 # ---------------------------------------------------------------------
 if [ "${VERIFICATION_PASSED}" = true ]; then
-  echo " [4/4] Verification PASSED (100% Valid). Cleaning up temporary backups..."
+  echo " [4/4] Structural verification passed (gzip readable / JSON parseable / supported root type). Cleaning up temporary backups..."
   for trace_file in "${TRACE_FILES[@]}"; do
     [ -f "${trace_file}.bak.${PID_SUFFIX}" ] && rm -f "${trace_file}.bak.${PID_SUFFIX}"
     
@@ -235,7 +243,7 @@ if [ "${VERIFICATION_PASSED}" = true ]; then
     done < <(find "${dir_path}" -maxdepth 1 -type f -name "*.pb.bak.${PID_SUFFIX}" -print0 2>/dev/null)
   done
   PIPELINE_SUCCESSFUL=true
-  echo " [COMPLETE] Execution pipeline finished successfully with 100% fail-safe verification."
+  echo " [COMPLETE] Execution pipeline finished successfully with structural verification."
   # Remove EXIT trap on successful run
   trap - EXIT INT TERM
 else
