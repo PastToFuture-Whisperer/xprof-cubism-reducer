@@ -2,16 +2,17 @@
 # Copyright (c) 2026 PastToFuture-Whisperer
 # SPDX-License-Identifier: MIT
 #
-# Version: 1.2.2 (Patch update: Fixes Protobuf Varint LE decoding and binary string key matching)
+# Version: 1.2.3 (Patch update: Multi-process (pid, tid) grouping fix, accurate metrics separation, and refined safety boundaries)
 #
 # This program is a byproduct of the advanced profile optimization research 
 # mentioned in the documentation; those core features are explicitly excluded 
 # from this repository and implemented separately.
 
-__version__ = "1.2.2"
+__version__ = "1.2.3"
 
 import argparse
 import os
+import sys
 import glob
 import gzip
 import json
@@ -19,43 +20,25 @@ import math
 import re
 import gc
 from collections import defaultdict
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any, Tuple
 
 # =====================================================================
-# TECHNICAL ARCHITECTURE & DESIGN TRADEOFFS (PLEASE READ)
-# =====================================================================
+# TENSORBOARD / XPROF TRACE VISUALIZATION REDUCER
 #
-# Why In-Place Byte-Replacement?
-# Standard Protobuf parsing (e.g., via google.protobuf) introduces severe 
-# memory overhead (OOM) and execution delay when processing multi-gigabyte 
-# raw traces in constrained or containerized environments. To achieve 
-# extreme speed, zero third-party dependencies (0-dep), and non-invasive 
-# pipeline execution, this module utilizes deterministic in-place string 
-# masking directly on raw binary bytes.
+# PURPOSE & OPERATIONAL MODEL:
+# Creates a lightweight, visualization-oriented overview of large traces
+# (.trace.json.gz) to reduce browser-side rendering and memory pressure
+# during routine dashboard monitoring ("dashcam-style" profiling).
 #
-# Deterministic Wire Type Guarding (~99.999% Reliability):
-# By inspecting the Protobuf Wire Type tag (Tag == 2 / Length-delimited) 
-# and validating byte-length offsets prior to substitution, raw numerical 
-# payloads and float buffers are robustly shielded from accidental replacement.
+# NOTICE (INTENTIONALLY LOSSY):
+# - This tool is INTENTIONALLY LOSSY and NOT a lossless trace compressor.
+# - Do NOT replace raw profiling data; retain or collect raw / high-resolution
+#   profiling data separately when detailed analysis is required.
 #
-# Zero-Deserialization Tradeoff & False Positive Boundary:
-# To maintain O(N) performance, zero dependencies (0-dep), and memory efficiency 
-# across general profiling environments, full Protobuf schema deserialization is intentionally 
-# bypassed. Consequently, a non-zero theoretical probability of false positives exists if raw 
-# binary streams happen to mimic Wire Type 2 tag structures. 
-#
-# Defense-in-Depth Architecture:
-# Operational safety is guaranteed via a multi-layered model: Wire Type 2 tag inspection 
-# eliminates ~99.999% of accidental collisions during in-place substitution, while the 
-# execution wrapper (run_with_check.sh) provides zero-dep structural verification and 
-# instant automated rollback protection for absolute data safety.
-#
-# User-Directed Execution & Liability Disclaimer:
-# This module operates strictly and exclusively on the target directory explicitly 
-# specified by the user via the '--logdir' parameter. While in-place reductions and 
-# Wire Type 2 masking are architected for maximum operational safety, execution 
-# is strictly user-directed. Users are advised to retain primary raw backups prior 
-# to execution. Provided "AS-IS" under the MIT License without implied warranties.
+# DETAILED INTEGRATION & OPERATIONAL SCOPE:
+# For production concurrency lock-guards, active process inspection, dynamic
+# resolution scaling, and pipeline recipes, please refer to:
+#   docs/ADVANCED_INTEGRATION_GUIDE.md
 # =====================================================================
 
 # =====================================================================
@@ -119,11 +102,11 @@ def merge_events_to_mosaic(
     resolution_percentage: float
 ) -> List[Dict[str, Any]]:
     """
-    [Fully Stated & Accelerated Version] O(N) Deterministic Mosaicing & Adjacent Rectangle Merging Algorithm
+    [Fully Stated & Accelerated Version] Deterministic Mosaicing & Adjacent Rectangle Merging Algorithm
 
-    An O(N) deterministic post-processor that completely eliminates double loops (O(N^2)) by binning events 
-    into time buckets. Directly calculates thread occupancy time to maximize data reduction and prevent 
-    browser (V8/WebGL) rendering crashes.
+    An optimized deterministic post-processor designed for approximately linear time behavior on typical 
+    trace workloads. Binning duration events into time buckets per (pid, tid) lane to reduce browser-side
+    rendering and memory pressure.
 
     Parameters
     ----------
@@ -136,52 +119,51 @@ def merge_events_to_mosaic(
     -------
     List[Dict[str, Any]]
         Streamlined event array processed with spatial downsampling and adjacent tile merging.
-
-    Notes
-    -----
-    - This function targets only `ph == "X"` (Duration Events) for smoothing and aggregation.
-    - To prevent tile disjunction caused by floating-point rounding errors, precision rounding is applied via 
-      `ReducerConfig.DEFAULT_PRECISION_DECIMALS` alongside adjacency checks via `ReducerConfig.EPSILON_MERGE_THRESHOLD`.
-    - Automatically calculates dynamic threshold limits based on raw data density to avoid exceeding V8 rendering 
-      capacity, applying automatic snap corrections as needed.
     """
     # Immediate return if there are no events to process
     if not raw_events:
         return []
 
-    orig_size = len(raw_events)
-    # Extract Process ID (pid) from the first event (default: 0)
-    pid = raw_events[0].get("pid", 0) if isinstance(raw_events[0], dict) else 0
+    # Filter valid duration events (ph == "X") with valid timestamps
+    duration_events = [
+        ev for ev in raw_events 
+        if isinstance(ev, dict) and ev.get("ph") == "X" and "ts" in ev and "dur" in ev
+    ]
+    
+    orig_dur_size = len(duration_events)
+    if orig_dur_size == 0:
+        return []
 
     # =====================================================================
-    # Dynamic Limit Resolution & Operational Safety Snap
-    # Calculates the theoretical minimum resolution to prevent browser crashes based on event density.
+    # Dynamic Heuristic Resolution Floor
+    # Calculates an estimated resolution floor to reduce rendering pressure based on event density.
     # =====================================================================
-    theoretical_min = (50.0 / max(1, orig_size)) * 100.0
+    theoretical_min = (50.0 / max(1, orig_dur_size)) * 100.0
     calculated_limit = float(math.ceil(theoretical_min) + ReducerConfig.BASE_SAFETY_BUFFER)
 
-    # Automatically snap to calculated safety limit if user-specified resolution falls below threshold
+    # Automatically snap to calculated heuristic floor if user-specified resolution falls below threshold
     if resolution_percentage <= 0.0 or resolution_percentage < calculated_limit:
-        print(f"\n [WARNING] ── Specified resolution ({resolution_percentage:.3f}%) poses a rendering crash risk for this event density.")
-        print(f" ├─ Raw Event Count: {orig_size:,}")
-        print(f" ├─ Action : Automatically snapped upward to [Dynamic Limit Resolution] to protect browser memory.")
-        print(f" └─ Applied Safety Value : {calculated_limit:.2f}% (Ceil Value + 1% Safety Margin Enforced)")
+        print(f"\n [WARNING] ── Specified resolution ({resolution_percentage:.3f}%) may result in extreme downsampling for this event density.")
+        print(f" ├─ Raw Duration Event Count: {orig_dur_size:,}")
+        print(f" ├─ Action : Automatically snapped upward to [Heuristic Resolution Floor].")
+        print(f" └─ Applied Resolution Floor : {calculated_limit:.2f}%")
         resolution_percentage = calculated_limit
 
     # Fast bypass: Return duration events as-is if resolution is 100% or greater
     if resolution_percentage >= 100.0:
-        return [ev for ev in raw_events if isinstance(ev, dict) and ev.get("ph") == "X"]
+        return duration_events
 
-    # Group events by Thread ID (tid), filtering for valid duration events (ph == "X") with valid timestamps
+    # Group events by (PID, TID) tuple to ensure multi-process lane isolation
     lane_groups = defaultdict(list)
-    for ev in raw_events:
-        if isinstance(ev, dict) and ev.get("ph") == "X" and "ts" in ev and "dur" in ev:
-            lane_groups[ev.get("tid", 0)].append(ev)
+    for ev in duration_events:
+        pid = ev.get("pid", 0)
+        tid = ev.get("tid", 0)
+        lane_groups[(pid, tid)].append(ev)
 
     mosaic_events = []
 
-    # Process mosaicing and aggregation per thread (lane)
-    for tid, events in lane_groups.items():
+    # Process mosaicing and aggregation per (pid, tid) lane
+    for (pid, tid), events in lane_groups.items():
         # Sort events chronologically by timestamp
         events.sort(key=lambda x: x["ts"])
         
@@ -193,15 +175,14 @@ def merge_events_to_mosaic(
         if total_dur <= 1e-6:
             continue
 
-        # =====================================================================
         # Dynamic calculation of time subdivision chunks based on resolution percentage
-        # =====================================================================
         if resolution_percentage <= 10.0:
             chunks_count = ReducerConfig.MIN_CHUNKS_LOW
         elif resolution_percentage <= 80.0:
             ratio = (resolution_percentage - 10.0) / (80.0 - 10.0)
             chunks_count = int(5 + ratio * (ReducerConfig.MAX_CHUNKS_MID - 5))
         else:
+            # FIX: Corrected range denominator to (100.0 - 80.0) to prevent chunk undershooting
             ratio = (resolution_percentage - 80.0) / (100.0 - 80.0)
             chunks_count = int(ReducerConfig.MAX_CHUNKS_MID + ratio * (ReducerConfig.MAX_CHUNKS_HIGH - ReducerConfig.MAX_CHUNKS_MID))
 
@@ -209,18 +190,17 @@ def merge_events_to_mosaic(
         chunks_count = max(1, chunks_count)
         tile_width = max(1e-6, total_dur / chunks_count)
 
-        # Flat dictionary structure (idx, name) -> duration to minimize Python object allocation overhead
+        # Flat dictionary structure (idx, name) -> duration
         grid_durations = defaultdict(float)
         
         for ev in events:
             ev_start = ev["ts"]
             ev_end = ev_start + ev["dur"]
             
-            # Directly map event span to grid index range via division (O(1) derivation)
+            # Map event span to grid index range via division
             idx_start = max(0, int((ev_start - start_ts) / tile_width))
             idx_end = min(chunks_count - 1, int((ev_end - start_ts) / tile_width))
             
-            # Index Inversion Safeguard (Floating-point boundary guard)
             if idx_start > idx_end:
                 continue
             
@@ -229,7 +209,6 @@ def merge_events_to_mosaic(
                 grid_w_start = start_ts + idx * tile_width
                 grid_w_end = grid_w_start + tile_width
                 
-                # Compute precise overlap duration within current tile boundaries
                 actual_start = max(ev_start, grid_w_start)
                 actual_end = min(ev_end, grid_w_end)
                 overlap = actual_end - actual_start
@@ -241,17 +220,14 @@ def merge_events_to_mosaic(
         for (idx, name), overlap in grid_durations.items():
             bucket_map[idx][name] = overlap
 
-        # Generate temporary tiles by selecting dominant (longest occupancy) event names per bucket
+        # Generate temporary tiles by selecting dominant event names per bucket
         temporary_tiles = []
         for idx in sorted(bucket_map.keys()):
             name_durs = bucket_map[idx]
             if name_durs:
-                # Retrieve event name occupying maximum duration within current grid
                 dominant_name = max(name_durs, key=name_durs.get)
                 
-                # Apply UTF-8 byte-length preserved masking (Pads with '*' to match EXACT byte count)
-                # GENERALIZATION NOTE: While basic ASCII character slicing is sufficient for standard TensorBoard trace events,
-                # preserving exact UTF-8 byte length guarantees zero structural corruption across multi-language profiles and Protobuf Wire Type 2 payloads.
+                # Apply UTF-8 byte-length preserved masking (preserves byte length to reduce structural corruption risk)
                 if not dominant_name.endswith("*"):
                     encoded_bytes = dominant_name.encode('utf-8')
                     orig_byte_len = len(encoded_bytes)
@@ -259,16 +235,13 @@ def merge_events_to_mosaic(
                     if orig_byte_len <= 1:
                         dominant_name = "*"
                     else:
-                        # Trim trailing character(s) until byte length is strictly less than orig_byte_len
                         temp_name = dominant_name
                         while temp_name and len(temp_name.encode('utf-8')) >= orig_byte_len:
                             temp_name = temp_name[:-1]
                         
-                        # Pad with '*' to match the exact original UTF-8 byte count
                         needed_padding = orig_byte_len - len(temp_name.encode('utf-8'))
                         dominant_name = temp_name + ("*" * needed_padding)
         
-                # Floating-point precision correction (round to configured decimal places to eliminate evaluation noise)
                 t_ts = round(float(start_ts + idx * tile_width), ReducerConfig.DEFAULT_PRECISION_DECIMALS)
                 t_dur = round(float(tile_width), ReducerConfig.DEFAULT_PRECISION_DECIMALS)
 
@@ -277,11 +250,7 @@ def merge_events_to_mosaic(
                     "ts": t_ts, "dur": t_dur, "name": dominant_name
                 })
 
-        # =====================================================================
-        # Complete Consolidation of Adjacent Identical Tiles
-        # Merges contiguous, identically named tiles within the same lane to further minimize DOM element count.
-        # Uses EPSILON_MERGE_THRESHOLD to safely absorb floating-point rounding errors during joining.
-        # =====================================================================
+        # Consolidation of Adjacent Identical Tiles
         merged_lane = []
         temporary_tiles.sort(key=lambda x: x["ts"])
 
@@ -290,7 +259,6 @@ def merge_events_to_mosaic(
                 merged_lane.append(ev)
             else:
                 last_ev = merged_lane[-1]
-                # Merge into a single macro-tile if name matches and temporal gap is below EPSILON_MERGE_THRESHOLD
                 if last_ev["name"] == ev["name"] and abs((last_ev["ts"] + last_ev["dur"]) - ev["ts"]) < ReducerConfig.EPSILON_MERGE_THRESHOLD:
                     last_ev["dur"] = round(last_ev["dur"] + ev["dur"], ReducerConfig.DEFAULT_PRECISION_DECIMALS)
                 else:
@@ -307,7 +275,6 @@ def main() -> None:
     Handles recursive discovery, loading, structural transformation, saving of .trace.json.gz logs, 
     and safe string masking within .pb binary metadata.
     """
-    # Parse command-line arguments
     parser = argparse.ArgumentParser(description="TensorBoard Trace Log Reducer & Binary Masker")
     parser.add_argument(
         "--logdir", 
@@ -318,28 +285,27 @@ def main() -> None:
     parser.add_argument("--resolution", type=float, default=50.0, help="Target resolution percentage (Default: 50.0)")
     args = parser.parse_args()
 
-    # Recursively locate target .trace.json.gz files
     target_pattern = os.path.join(args.logdir, "plugins", "profile", "*", "*.trace.json.gz")
     trace_files = glob.glob(target_pattern)
     
     if not trace_files:
         print(f" [ERROR] No trace.json.gz found in {target_pattern}")
-        return
+        sys.exit(1)
 
-    # Execute reduction process per discovered trace file
     for trace_path in trace_files:
         print(f"\n [INFO] Target Trace: {trace_path}")
         
-        # Large trace pre-check: Inspect file size before memory allocation to warn against potential OOM spikes
         file_size_mb = os.path.getsize(trace_path) / (1024.0 * 1024.0)
         if file_size_mb > ReducerConfig.LARGE_TRACE_THRESHOLD_MB:
             print(f" [NOTICE] Heavy trace file detected ({file_size_mb:.1f} MB compressed). Processing buffer allocated.")
 
-        # Load gzipped trace log
-        with gzip.open(trace_path, "rt") as f:
-            data = json.load(f)
+        try:
+            with gzip.open(trace_path, "rt") as f:
+                data = json.load(f)
+        except Exception as e:
+            print(f" [ERROR] Failed to read or parse trace file {trace_path}: {e}")
+            sys.exit(1)
 
-        # Dynamically determine JSON root structure (dict {"traceEvents": [...]} vs raw list [...])
         is_dict_root = isinstance(data, dict)
         if is_dict_root:
             orig_events = data.get("traceEvents", [])
@@ -348,49 +314,53 @@ def main() -> None:
         else:
             orig_events = []
 
-        orig_size = len(orig_events)
-        safe_orig_size = max(1, orig_size)  # ZeroDivisionError protection valve
-        print(f" ├─ Original Event Count: {orig_size:,}")
-
-        # Perform optimized mosaicing reduction
-        shrunk_events = merge_events_to_mosaic(orig_events, args.resolution)
-        shrunk_size = len(shrunk_events)
+        orig_total_size = len(orig_events)
         
-        # Preserve non-duration metadata events (lane names, process metadata, etc.) and append reduced events
-        meta_events = [ev for ev in orig_events if isinstance(ev, dict) and ev.get("ph") != "X"]
-        updated_events = meta_events + shrunk_events
+        # Categorize events strictly for accurate metrics calculation
+        orig_dur_events = [ev for ev in orig_events if isinstance(ev, dict) and ev.get("ph") == "X" and "ts" in ev and "dur" in ev]
+        orig_meta_events = [ev for ev in orig_events if isinstance(ev, dict) and ev.get("ph") != "X"]
+        
+        orig_dur_size = len(orig_dur_events)
+        
+        print(f" ├─ Original Total Events   : {orig_total_size:,}")
+        print(f" ├─ Original Duration Events: {orig_dur_size:,}")
 
-        # Reconstruct output structure matching original schema
+        # Perform mosaicing reduction on duration events
+        shrunk_dur_events = merge_events_to_mosaic(orig_events, args.resolution)
+        shrunk_dur_size = len(shrunk_dur_events)
+        
+        # Combine metadata events with reduced duration events
+        updated_events = orig_meta_events + shrunk_dur_events
+        final_total_size = len(updated_events)
+
         if is_dict_root:
             data["traceEvents"] = updated_events
         else:
             data = updated_events
         
-        # Calculate reduction ratio with zero-division safety guard
-        reduction_ratio = (1.0 - (shrunk_size / safe_orig_size)) * 100.0
+        # Calculate Duration Event Reduction Ratio safely
+        safe_orig_dur_size = max(1, orig_dur_size)
+        dur_reduction_ratio = (1.0 - (shrunk_dur_size / safe_orig_dur_size)) * 100.0
 
-        # Atomic Write Pattern for JSON.GZ to prevent file corruption
+        # Atomic Write Pattern for JSON.GZ
         tmp_trace_path = f"{trace_path}.tmp"
-        with gzip.open(tmp_trace_path, "wt") as f:
-            json.dump(data, f, separators=(',', ':'))
-        os.replace(tmp_trace_path, trace_path)
+        try:
+            with gzip.open(tmp_trace_path, "wt") as f:
+                json.dump(data, f, separators=(',', ':'))
+            os.replace(tmp_trace_path, trace_path)
+        except Exception as e:
+            print(f" [ERROR] Failed to write processed trace file {tmp_trace_path}: {e}")
+            sys.exit(1)
         
-        print(f" ├─ Processed Event Count: {shrunk_size:,}")
-        print(f" └─ Data Point Reduction Ratio: {reduction_ratio:.2f}%")
+        print(f" ├─ Reduced Duration Events : {shrunk_dur_size:,}")
+        print(f" ├─ Final Output Events     : {final_total_size:,}")
+        print(f" └─ Duration Event Reduction: {dur_reduction_ratio:.2f}%")
 
-        # =====================================================================
-        # Protobuf Wire Type 2 (Length-delimited) Safe Masking Engine
-        # Performs in-place ASCII string masking on raw .pb binaries without heavy
-        # deserialization libraries. Validates Protobuf field tags and Varint string
-        # lengths prior to substitution to eliminate false-positive memory corruption.
-        # =====================================================================
+        # Protobuf Wire Type 2 Safe Masking Engine
         dir_path = os.path.dirname(trace_path)
         pb_files = glob.glob(os.path.join(dir_path, "*.pb"))
         
-        # FIX: Extract original raw names prior to mosaic truncation to ensure byte-length key matching
         distinct_raw_names = set(ev["name"] for ev in orig_events if isinstance(ev, dict) and "name" in ev)
-
-        # Sort target names in DESCENDING ORDER of length to prevent substring aliasing
         sorted_distinct_names = sorted(distinct_raw_names, key=len, reverse=True)
 
         for pb_target in pb_files:
@@ -399,8 +369,6 @@ def main() -> None:
                     modified_bytes = bytearray(f.read())
 
                 for base_name in sorted_distinct_names:
-                    # ENHANCED GUARD: Enforce minimum string length boundary (>= 5 bytes) 
-                    # to prevent collisions on high-frequency short tokens (e.g., 'Add', 'x')
                     if not base_name or len(base_name) < 5 or not re.match(r'^[A-Za-z0-9_/\-:.\(\)@]+$', base_name):
                         continue
                     
@@ -408,49 +376,46 @@ def main() -> None:
                     target_len = len(target)
                     replacement = target[:-1] + b'*'
                     
-                    # Scan for exact target byte sequence matches within raw binary buffer
                     idx = 0
                     while True:
                         idx = modified_bytes.find(target, idx)
                         if idx == -1:
                             break
                         
-                        # Validate Protobuf Tag and Wire Type using Little-Endian Varint decoder
                         if verify_protobuf_wire2_boundary(modified_bytes, idx, target_len):
                             modified_bytes[idx : idx + target_len] = replacement
                             idx += target_len
                         else:
-                            # Skip unverified match (likely raw numerical payload or unrelated struct)
                             idx += 1
 
-                # Atomic File Replace for .pb files to guarantee process resilience
+                # Atomic File Replace (reduce the risk of leaving a partially written PB file)
                 tmp_pb_target = f"{pb_target}.tmp"
                 with open(tmp_pb_target, "wb") as f:
                     f.write(modified_bytes)
                 os.replace(tmp_pb_target, pb_target)
 
-                print(f" ├─ [MASKED] Safely processed binary metadata (Wire Type 2 Verified): {os.path.basename(pb_target)}")
+                print(f" ├─ [MASKED] Processed binary metadata (Wire Type 2 Verified): {os.path.basename(pb_target)}")
 
-            except (IOError, OSError, Exception) as e:
-                # Catch physical file access errors or structural anomalies to shield main pipeline
-                print(f" ├─ [WARNING] Non-fatal PB masking bypass applied to {os.path.basename(pb_target)}: {e}")
+            except (IOError, OSError) as e:
+                print(f" [ERROR] Critical I/O failure during PB masking on {os.path.basename(pb_target)}: {e}")
+                sys.exit(1)
+            except Exception as e:
+                print(f" [ERROR] Unexpected failure during PB masking on {os.path.basename(pb_target)}: {e}")
+                sys.exit(1)
 
-        # Explicit Memory Cleanup (Anti-OOM Guard for Cloud Shell / Low Memory Containers)
-        # Executed AFTER binary masking completes to allow access to original event metadata
         del data
         del orig_events
         gc.collect()
 
-        print(" ├─ [INFO] Grid uniformity verification: Optimal continuous pattern detected.")
+        print(" ├─ [INFO] Tile consolidation completed.")
         
-        # Simulate operational safety boundaries (with zero-division safety guard)
-        simulated_min_reduction = min(95.0, max(5.0, (shrunk_size / safe_orig_size) * ReducerConfig.SIMULATION_SCALE_FACTOR * ReducerConfig.SAFETY_MARGIN_RATIO))
+        simulated_min_reduction = min(95.0, max(5.0, (shrunk_dur_size / safe_orig_dur_size) * ReducerConfig.SIMULATION_SCALE_FACTOR * ReducerConfig.SAFETY_MARGIN_RATIO))
         simulated_max_resolution = 100.0 - simulated_min_reduction
 
         print("\n [SUMMARY] Profile Reduction Metrics")
         print(f" ├─ Current Resolution Configured: {args.resolution:.2f}%")
-        print(f" ├─ Memory Load Reduction Target : {reduction_ratio:.2f}%")
-        print(f" └─ Operational Safety Boundary (Counter-Calculated Max Resolution): {simulated_max_resolution:.2f}%")
+        print(f" ├─ Duration Event Reduction     : {dur_reduction_ratio:.2f}%")
+        print(f" └─ Estimated Resolution Floor   : {simulated_max_resolution:.2f}%")
 
 if __name__ == "__main__":
     main()
