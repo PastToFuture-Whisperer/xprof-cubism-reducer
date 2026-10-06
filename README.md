@@ -61,14 +61,14 @@ Raw / high-resolution trace inspection for detailed analysis
 Zero third-party dependencies required—runs out of the box using pure standard Python 3.8+ and Bash:
 
 #### Option A: Standalone Execution (Direct Python)
-Process target log directories directly with Python standard libraries:
+Process target log directories directly with Python standard libraries using **[`tb_log_reducer.py`](tb_log_reducer.py)**:
 
 ```bash
 python3 tb_log_reducer.py --logdir ./tb_logs --resolution 50.0
 ```
 
 #### Option B: Pipeline-Integrated Execution via Wrapper
-Run target benchmarking or training scripts through `run_with_check.sh` for safe post-processing and automatic rollback protection:
+Run target benchmarking or training scripts through **[`run_with_check.sh`](run_with_check.sh)** for safe post-processing and automatic rollback protection:
 
 ```bash
 # Usage: bash run_with_check.sh [Resolution %] [Target Script] [Arguments...]
@@ -80,7 +80,7 @@ bash run_with_check.sh 10 sample.py --logdir ./tb_logs
 <a name="chapter-1"></a>
 ## 1. Technical Specifications & Structural Boundaries
 
-`tb_log_reducer.py` restructures dense event arrays in TensorBoard trace logs (XProf format) using an algorithm designed for approximately linear time behavior under typical trace workloads.
+The core module **[`tb_log_reducer.py`](tb_log_reducer.py)** restructures dense event arrays in TensorBoard trace logs (XProf format) using an algorithm designed for approximately linear time behavior under typical trace workloads.
 
 ### Core Processing Mechanisms
 
@@ -94,7 +94,7 @@ bash run_with_check.sh 10 sample.py --logdir ./tb_logs
 
 ### Failure Handling & Structural Safety Boundaries
 
-* **Process-Isolated Backups:** `run_with_check.sh` creates `.bak.$$` backups tied to the process PID prior to processing, avoiding backup pollution during multi-trace sequential runs.
+* **Process-Isolated Backups:** **[`run_with_check.sh`](run_with_check.sh)** creates `.bak.$$` backups tied to the process PID prior to processing, avoiding backup pollution during multi-trace sequential runs.
 * **Structural Integrity Checks:** Performs post-processing checks verifying gzip readability, JSON parseability, and root data type compatibility using standard libraries.
 * **Handled Rollback:** Automatically triggers best-effort rollback from backups if processing fails or structural corruption is detected.
 * **Operational Scope Limits:** The wrapper handles expected execution failure paths and signal traps (`SIGINT`, `SIGTERM`). Uncatchable process terminations (`SIGKILL / kill -9`), physical filesystem failures, or power loss are outside its operational guarantees.
@@ -187,7 +187,7 @@ Low-level systems research continues through projects such as `xprof-jitter-inte
 
 If you find `xprof-cubism-reducer` (or `perceptual-chain`) useful in your workflow, consider supporting ongoing development and research through Ko-fi:
 
-[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-ff5f5f?style=flat&logo=ko-fi)]([https://ko-fi.com/pasttofuture_whisperer](https://ko-fi.com/pasttofuture_whisperer))
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Buy%20me%20a%20coffee-ff5f5f?style=flat&logo=ko-fi)](https://ko-fi.com/pasttofuture_whisperer)
 
 Your contributions support continuous benchmark testing, open-source maintenance, and theoretical research in AI control architecture.
 
